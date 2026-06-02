@@ -2,7 +2,7 @@
   "name": "Химическая Лаборатория",
   "short_name": "ХимЛаб",
   "description": "Интерактивная таблица Менделеева — соединяй элементы в вещества, сплавы и смеси",
-  "start_url": "./chemistry_game.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
@@ -20,7 +20,7 @@
       "name": "Открыть лабораторию",
       "short_name": "Лаб",
       "description": "Начать эксперимент",
-      "url": "./chemistry_game.html"
+      "url": "./index.html"
     }
   ]
 }
