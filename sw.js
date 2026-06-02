@@ -1,7 +1,7 @@
 // ⚗️ Химическая Лаборатория — Service Worker
 const CACHE = 'chemlab-v1';
 const ASSETS = [
-  './chemistry_game.html',
+  './index.html',
   './manifest.json',
   './icon-192.svg',
   './icon-512.svg',
@@ -34,6 +34,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return resp;
       });
-    }).catch(() => caches.match('./chemistry_game.html'))
+    }).catch(() => caches.match('./index.html'))
   );
 });
