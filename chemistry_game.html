@@ -248,14 +248,7 @@
 
     body.tab-lab   .table-panel    { display: none; }
     body.tab-lab   .right-panel    { display: flex; }
-    body.tab-lab   .result-area    { display: none; }
-    body.tab-lab   .history        { display: none; }
 
-    body.tab-result .table-panel  { display: none; }
-    body.tab-result .right-panel  { display: flex; }
-    body.tab-result .lab-bench    { display: none; }
-    body.tab-result .prediction-panel { display: none; }
-    body.tab-result .result-area  { display: block; flex: 1; }
 
     /* ── Periodic table cells: scale to ~19px ── */
     .periodic-table {
@@ -1725,7 +1718,6 @@ function combine() {
     result.innerHTML = renderGeneratedCard(generated);
     addHistory(generated, generated._type);
   }
-  if (isMobile()) switchTab('result');
 }
 
 function renderCard(c) {
@@ -1953,9 +1945,7 @@ if ('serviceWorker' in navigator) {
     <span class="tab-badge" id="labBadge"></span>
     <span class="tab-icon">⚗️</span><span>Лаборатория</span>
   </button>
-  <button class="tab-btn" onclick="switchTab('result')" id="tab-result">
-    <span class="tab-icon">📋</span><span>Результат</span>
-  </button>
 </div>
 </body>
 </html>
+  
