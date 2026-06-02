@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Химическая лаборатория</title>
+<meta name="theme-color" content="#1a1a3e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ХимЛаб">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0a0a1a; color: #e0e0ff; min-height: 100vh; }
+
+  header { background: linear-gradient(135deg, #1a1a3e, #0d2b4e); padding: 16px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #2a4a8a; }
+  header h1 { font-size: 1.6rem; background: linear-gradient(90deg, #7eb8ff, #b07aff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  header p { color: #8899cc; font-size: 0.85rem; }
+
+  .main { display: flex; gap: 0; height: calc(100vh - 70px); }
+
+  /* PERIODIC TABLE */
+  .table-panel { flex: 1; overflow: auto; padding: 16px; background: #080818; }
+  .table-panel h2 { color: #7eb8ff; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  .periodic-table { display: grid; grid-template-columns: repeat(18, 44px); gap: 2px; min-width: 820px; }
+  .element {
+    width: 44px; height: 50px; border-radius: 4px; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; border: 1px solid transparent;
+    transition: all 0.15s; position: relative; user-select: none;
+  }
+  .element:hover { transform: scale(1.15); z-index: 10; border-color: #fff4; box-shadow: 0 0 12px #7eb8ff88; }
+  .element.selected { border-color: #7eb8ff; box-shadow: 0 0 14px #7eb8ff; transform: scale(1.1); z-index: 5; }
+  .element .sym { font-size: 1.05rem; font-weight: 700; line-height: 1; }
+  .element .num { font-size: 0.55rem; opacity: 0.7; }
+  .element .name-el { font-size: 0.6rem; opacity: 0.6; }
+  .element.empty { background: none; border: none; cursor: default; }
+  .element.empty:hover { transform: none; box-shadow: none; }
+
+  /* categories */
+  .cat-alkali    { background: #3d1a1a; }
+  .cat-alkali-earth { background: #3d2a1a; }
+  .cat-transition { background: #1a2a3d; }
+  .cat-post-transition { background: #1a3d2a; }
+  .cat-metalloid { background: #2a3d1a; }
+  .cat-nonmetal  { background: #1a3d3d; }
+  .cat-halogen   { background: #2a1a3d; }
+  .cat-noble     { background: #3d1a3d; }
+  .cat-lanthanide { background: #3d3d1a; }
+  .cat-actinide  { background: #2a2a1a; }
+
+  /* RIGHT PANEL */
+  .right-panel { width: 340px; background: #0d0d2a; border-left: 2px solid #1a2a5a; display: flex; flex-direction: column; }
+
+  /* Lab bench */
+  .lab-bench { padding: 16px; border-bottom: 2px solid #1a2a5a; }
+  .lab-bench h2 { color: #b07aff; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .slots { display: flex; flex-wrap: wrap; gap: 6px; min-height: 60px; margin-bottom: 10px; }
+  .slot {
+    width: 52px; height: 52px; border-radius: 6px; border: 2px dashed #3a4a8a;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .slot:hover { border-color: #ff6b6b; }
+  .slot .slot-sym { font-size: 1rem; font-weight: 700; }
+  .slot .slot-cnt { position: absolute; top: 2px; right: 5px; font-size: 0.65rem; color: #ffcc44; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.2s; }
+  .btn-combine { background: linear-gradient(135deg, #5a2db5, #3a6ab5); color: #fff; flex: 1; }
+  .btn-combine:hover { background: linear-gradient(135deg, #7a4dd5, #5a8ad5); transform: translateY(-1px); }
+  .btn-clear { background: #3a1a1a; color: #ff8888; border: 1px solid #5a2a2a; }
+  .btn-clear:hover { background: #5a2a2a; }
+  .hint { font-size: 0.75rem; color: #5566aa; margin-top: 6px; }
+
+  /* Percentage mode */
+  .pct-toggle { background: #1a1a3a; color: #7eb8ff; border: 1px solid #2a3a6a; font-size: 0.75rem; padding: 5px 10px; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
+  .pct-toggle.active { background: #2a3a6a; color: #aaddff; border-color: #5a8acc; }
+  .slot-pct-input {
+    width: 36px; height: 18px; background: #0a0a22; border: 1px solid #3a4a8a;
+    color: #ffcc44; font-size: 0.7rem; text-align: center; border-radius: 3px;
+    outline: none; margin-top: 2px;
+  }
+  .slot-pct-input:focus { border-color: #7eb8ff; }
+  .pct-sum { font-size: 0.7rem; margin-top: 4px; text-align: right; }
+  .pct-sum.ok { color: #88dd88; }
+  .pct-sum.bad { color: #ff8888; }
+
+  /* Prediction panel */
+  .prediction-panel { padding: 10px 16px; border-top: 1px solid #1a2a5a; }
+  .prediction-panel h3 { font-size: 0.72rem; color: #b07aff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+  .pred-item {
+    display: flex; align-items: center; gap: 8px; padding: 5px 8px;
+    border-radius: 5px; border: 1px solid #2a2a4a; margin-bottom: 4px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .pred-item:hover { background: #1a1a3a; border-color: #4a4a8a; }
+  .pred-formula { font-size: 0.85rem; font-weight: 700; color: #cce0ff; min-width: 60px; }
+  .pred-name { font-size: 0.72rem; color: #6677aa; flex: 1; }
+  .pred-ratio { font-size: 0.68rem; color: #ffcc44; white-space: nowrap; }
+  .pred-type-badge { font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; white-space: nowrap; }
+  .pred-compound { background: #0a1a3a; color: #7eb8ff; }
+  .pred-alloy { background: #0a2a0a; color: #88dd88; }
+  .pred-none { color: #334; font-size: 0.78rem; text-align: center; padding: 8px 0; }
+
+  /* Mechanical properties bars */
+  .mech-block { background: #0a0a22; border-radius: 6px; padding: 10px 12px; margin-top: 8px; }
+  .mech-title { font-size: 0.62rem; color: #5566aa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .mech-row { margin-bottom: 7px; }
+  .mech-label-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .mech-label { font-size: 0.68rem; color: #8899bb; }
+  .mech-value { font-size: 0.78rem; color: #cce0ff; font-weight: 600; }
+  .mech-bar-bg { height: 7px; background: #111128; border-radius: 4px; overflow: hidden; }
+  .mech-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .mech-category { font-size: 0.7rem; margin-top: 6px; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+  .mech-cat-0 { background:#1a1a3a; color:#5566aa; }   /* н/д */
+  .mech-cat-1 { background:#1a2a1a; color:#66aa66; }   /* очень мягкий */
+  .mech-cat-2 { background:#2a3a1a; color:#aacc44; }   /* мягкий */
+  .mech-cat-3 { background:#3a3a1a; color:#cccc44; }   /* средний */
+  .mech-cat-4 { background:#3a2a1a; color:#ccaa44; }   /* твёрдый */
+  .mech-cat-5 { background:#3a1a1a; color:#cc6644; }   /* очень твёрдый */
+  .mech-cat-6 { background:#2a0a0a; color:#ff4444; }   /* сверхтвёрдый */
+
+  /* Result */
+  .result-area { flex: 1; overflow-y: auto; padding: 16px; }
+  .result-area h2 { color: #7eb8ff; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .no-result { color: #334; font-size: 0.82rem; text-align: center; margin-top: 30px; line-height: 1.8; }
+
+  .compound-card {
+    background: linear-gradient(135deg, #12122a, #1a1a3a);
+    border: 1px solid #3a4a8a; border-radius: 10px; padding: 16px; margin-bottom: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+  .compound-formula { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .compound-formula sub { font-size: 0.7em; }
+  .compound-name { color: #b07aff; font-size: 0.95rem; margin-bottom: 12px; }
+  .compound-name .iupac { color: #7eb8ff; font-size: 0.78rem; margin-top: 2px; }
+
+  .props { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .prop { background: #0a0a22; border-radius: 6px; padding: 8px 10px; }
+  .prop-label { font-size: 0.62rem; color: #5566aa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .prop-value { font-size: 0.85rem; color: #cce0ff; font-weight: 600; }
+
+  .prop-full { grid-column: 1 / -1; }
+  .uses { background: #0a0a22; border-radius: 6px; padding: 8px 10px; margin-top: 8px; }
+  .uses .prop-label { font-size: 0.62rem; color: #5566aa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .uses-text { font-size: 0.78rem; color: #99aacc; line-height: 1.5; }
+
+  .unknown-card {
+    background: #1a0a0a; border: 1px solid #5a2a2a; border-radius: 10px; padding: 16px;
+    text-align: center; animation: fadeIn 0.3s ease;
+  }
+  .unknown-card .unknown-formula { font-size: 1.4rem; font-weight: 700; color: #ff8888; margin-bottom: 8px; }
+  .unknown-card p { color: #885555; font-size: 0.82rem; line-height: 1.6; }
+
+  /* History */
+  .history { padding: 12px 16px; border-top: 1px solid #1a2a5a; max-height: 140px; overflow-y: auto; }
+  .history h3 { font-size: 0.72rem; color: #445; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .history-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid #111; cursor: pointer; }
+  .history-item:hover { background: #1a1a3a; border-radius: 4px; padding-left: 4px; }
+  .history-formula { font-size: 0.85rem; font-weight: 700; color: #cce0ff; min-width: 70px; }
+  .history-name { font-size: 0.75rem; color: #5566aa; }
+
+  /* Legend */
+  .legend { padding: 8px 16px; border-top: 1px solid #0f1a3a; display: flex; flex-wrap: wrap; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.6rem; color: #5566aa; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* state colors */
+  .state-solid { color: #aaddff; }
+  .state-liquid { color: #55ccff; }
+  .state-gas { color: #aaffaa; }
+
+
+
+  /* PWA install banner */
+  .pwa-banner {
+    display: none; position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #1a1a3e, #0d2b4e);
+    border: 1px solid #3a6ab5; border-radius: 10px;
+    padding: 10px 16px; z-index: 300;
+    box-shadow: 0 4px 20px #0008; max-width: 320px; width: 90%;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { opacity:0; transform: translateX(-50%) translateY(16px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+  .pwa-banner.show { display: flex; align-items: center; gap: 10px; }
+  .pwa-banner-text { flex: 1; font-size: 0.78rem; color: #cce0ff; }
+  .pwa-banner-text strong { display: block; color: #7eb8ff; margin-bottom: 2px; }
+  .pwa-btn-install { background: linear-gradient(135deg, #5a2db5, #3a6ab5); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .pwa-btn-close  { background: none; border: none; color: #5566aa; font-size: 1.1rem; cursor: pointer; padding: 2px 4px; }
+
+  /* ============================================================
+     MOBILE — vertical portrait layout
+     ============================================================ */
+  @media (max-width: 768px) {
+    /* Header */
+    header { padding: 8px 12px; }
+    header h1 { font-size: 1rem; }
+    header p  { display: none; }
+
+    /* Main becomes single scrollable column */
+    .main {
+      flex-direction: column;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    /* Panels fill full width */
+    .table-panel {
+      width: 100%; flex: none;
+      padding: 10px 8px 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .right-panel {
+      width: 100%; border-left: none;
+      border-top: 2px solid #1a2a5a;
+    }
+
+    /* ── Tab system ──────────────────── */
+    .tab-bar {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      background: #0d0d2a;
+      border-top: 2px solid #1a2a5a;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .tab-btn {
+      flex: 1; padding: 8px 4px 6px;
+      border: none; background: none;
+      color: #445577; font-size: 0.65rem; font-weight: 600;
+      cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 2px; transition: color 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-btn .tab-icon { font-size: 1.3rem; line-height: 1; }
+    .tab-btn.active { color: #7eb8ff; }
+    .tab-btn.active .tab-icon { filter: drop-shadow(0 0 5px #7eb8ff88); }
+
+    /* Space for fixed tab bar */
+    body { padding-bottom: 62px; }
+
+    /* ── Tab visibility (controlled by body class) ── */
+    body.tab-table .table-panel   { display: block; }
+    body.tab-table .right-panel   { display: none; }
+
+    body.tab-lab   .table-panel    { display: none; }
+    body.tab-lab   .right-panel    { display: flex; }
+    body.tab-lab   .result-area    { display: none; }
+    body.tab-lab   .history        { display: none; }
+
+    body.tab-result .table-panel  { display: none; }
+    body.tab-result .right-panel  { display: flex; }
+    body.tab-result .lab-bench    { display: none; }
+    body.tab-result .prediction-panel { display: none; }
+    body.tab-result .result-area  { display: block; flex: 1; }
+
+    /* ── Periodic table cells: scale to ~19px ── */
+    .periodic-table {
+      grid-template-columns: repeat(18, 38px);
+      gap: 0px;
+      min-width: 0;
+    }
+    .element { width: 38px; height: 42px; border-radius: 3px; }
+    .element .sym  { font-size: 0.9rem; line-height: 1.1; }
+    .element .num  { display: block; font-size: 0.45rem; opacity: 0.6; }
+    .element .name-el {
+      display: block;
+      font-size: 0.48rem;
+      opacity: 0.75;
+      overflow: hidden;
+      white-space: nowrap;
+      max-width: 37px;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .element.selected { transform: scale(1.05); box-shadow: 0 0 6px #7eb8ff; }
+    .element:hover    { transform: scale(1.1); }
+    .table-panel h2   { font-size: 0.75rem; margin-bottom: 8px; }
+    /* Element info bar (mobile) */
+    .el-info-bar {
+      display: none;
+      align-items: center; gap: 8px;
+      background: #12122a; border: 1px solid #2a3a6a; border-radius: 7px;
+      padding: 6px 10px; margin-bottom: 8px;
+      animation: fadeIn 0.2s ease;
+    }
+    .el-info-bar.visible { display: flex; }
+    .ei-num  { font-size: 0.65rem; color: #445577; min-width: 18px; }
+    .ei-sym  { font-size: 1.15rem; font-weight: 700; color: #7eb8ff; min-width: 24px; text-align: center; }
+    .ei-name { font-size: 0.85rem; color: #ddeeff; font-weight: 600; flex: 1; }
+    .ei-cat  { font-size: 0.6rem; color: #7766aa; text-align: right; }
+    .ei-sel  { font-size: 0.65rem; color: #88dd88; font-weight: 700; white-space: nowrap; }
+
+    .legend { padding: 6px 8px; gap: 4px; }
+    .legend-item { font-size: 0.55rem; }
+
+    /* Column number labels above table */
+    .periodic-table > div[style*="16px"] { height: 12px !important; font-size: 0.4rem !important; }
+
+    /* ── Lab bench ── */
+    .lab-bench { padding: 12px; }
+    .lab-bench h2 { font-size: 0.75rem; margin-bottom: 8px; }
+    .slots { gap: 5px; min-height: 54px; margin-bottom: 8px; }
+    .slot { width: 48px; height: 48px; }
+    .slot .slot-sym { font-size: 0.9rem; }
+    .btn-row { gap: 6px; flex-wrap: nowrap; }
+    .btn-combine { font-size: 0.78rem; padding: 9px 10px; }
+    .pct-toggle  { font-size: 0.7rem; padding: 9px 8px; }
+    .btn-clear   { padding: 9px 10px; font-size: 0.78rem; }
+
+    /* ── Prediction panel compact ── */
+    .prediction-panel { padding: 8px 12px; }
+    .prediction-panel h3 { font-size: 0.65rem; }
+    .pred-item { padding: 4px 6px; }
+    .pred-formula { font-size: 0.78rem; min-width: 48px; }
+    .pred-name { font-size: 0.68rem; }
+
+    /* ── Result area ── */
+    .result-area { padding: 12px; }
+    .result-area h2 { font-size: 0.75rem; }
+    .compound-formula { font-size: 1.3rem; }
+    .compound-name { font-size: 0.88rem; }
+    .props { gap: 6px; }
+    .prop { padding: 6px 8px; }
+    .prop-label { font-size: 0.58rem; }
+    .prop-value { font-size: 0.78rem; }
+    .uses-text { font-size: 0.75rem; }
+
+    /* ── History ── */
+    .history { max-height: 110px; padding: 8px 12px; }
+    .history h3 { font-size: 0.65rem; }
+    .history-formula { font-size: 0.78rem; min-width: 55px; }
+    .history-name { font-size: 0.68rem; }
+
+    /* Badge on result tab showing selected count */
+    .tab-badge {
+      position: absolute; top: 4px; right: calc(50% - 18px);
+      background: #b07aff; color: #fff;
+      font-size: 0.55rem; border-radius: 8px;
+      padding: 1px 4px; min-width: 14px; text-align: center;
+      display: none;
+    }
+    .tab-badge.visible { display: inline-block; }
+    #tab-lab { position: relative; }
+  }
+
+  /* Very narrow phones */
+  @media (max-width: 360px) {
+    .periodic-table { grid-template-columns: repeat(18, 34px); }
+    .element { width: 34px; height: 40px; }
+    .element .sym { font-size: 0.8rem; }
+    .element .name-el { max-width: 33px; font-size: 0.44rem; }
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #080818; }
+  ::-webkit-scrollbar-thumb { background: #2a3a6a; border-radius: 3px; }
+
+  .element-count-badge { background: #2a1a4a; color: #b07aff; font-size: 0.6rem; padding: 1px 4px; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚗️ Химическая Лаборатория</h1>
+    <p>Выбирай элементы из таблицы Менделеева и соединяй их в вещества</p>
+  </div>
+</header>
+
+<div class="main">
+  <div class="table-panel">
+    <h2>Таблица Менделеева</h2>
+    <div class="el-info-bar" id="elInfoBar"><span class="ei-num" id="eiNum"></span><span class="ei-sym" id="eiSym">—</span><span class="ei-name" id="eiName">Нажмите на элемент</span><span class="ei-cat" id="eiCat"></span><span class="ei-sel" id="eiSel"></span></div>
+    <div class="periodic-table" id="periodicTable"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="right-panel">
+    <div class="lab-bench">
+      <h2>🧪 Лабораторный стол</h2>
+      <div class="slots" id="slots"></div>
+      <div class="btn-row">
+        <button class="btn btn-combine" onclick="combine()">⚗️ Соединить</button>
+        <button class="btn pct-toggle" id="pctToggle" onclick="togglePctMode()">% пропорции</button>
+        <button class="btn btn-clear" onclick="clearSlots()">✕</button>
+      </div>
+      <div class="hint" id="hint">Выберите 2–6 элементов из таблицы</div>
+    </div>
+
+    <div class="prediction-panel" id="predictionPanel" style="display:none;">
+      <h3>🔮 Прогноз</h3>
+      <div id="predictionList"></div>
+    </div>
+
+    <div class="result-area">
+      <h2>🔬 Результат</h2>
+      <div id="result">
+        <div class="no-result">
+          Выберите элементы<br>и нажмите «Соединить»<br><br>
+          Попробуйте: H + O, Na + Cl,<br>C + O, Fe + O, N + H…
+        </div>
+      </div>
+    </div>
+
+    <div class="history" id="historyPanel">
+      <h3>История открытий</h3>
+      <div id="historyList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// PERIODIC TABLE DATA
+// ============================================================
+const elements = [
+  // period 1
+  {n:1,sym:'H',name:'Водород',cat:'nonmetal',period:1,group:1},
+  {n:2,sym:'He',name:'Гелий',cat:'noble',period:1,group:18},
+  // period 2
+  {n:3,sym:'Li',name:'Литий',cat:'alkali',period:2,group:1},
+  {n:4,sym:'Be',name:'Бериллий',cat:'alkali-earth',period:2,group:2},
+  {n:5,sym:'B',name:'Бор',cat:'metalloid',period:2,group:13},
+  {n:6,sym:'C',name:'Углерод',cat:'nonmetal',period:2,group:14},
+  {n:7,sym:'N',name:'Азот',cat:'nonmetal',period:2,group:15},
+  {n:8,sym:'O',name:'Кислород',cat:'nonmetal',period:2,group:16},
+  {n:9,sym:'F',name:'Фтор',cat:'halogen',period:2,group:17},
+  {n:10,sym:'Ne',name:'Неон',cat:'noble',period:2,group:18},
+  // period 3
+  {n:11,sym:'Na',name:'Натрий',cat:'alkali',period:3,group:1},
+  {n:12,sym:'Mg',name:'Магний',cat:'alkali-earth',period:3,group:2},
+  {n:13,sym:'Al',name:'Алюминий',cat:'post-transition',period:3,group:13},
+  {n:14,sym:'Si',name:'Кремний',cat:'metalloid',period:3,group:14},
+  {n:15,sym:'P',name:'Фосфор',cat:'nonmetal',period:3,group:15},
+  {n:16,sym:'S',name:'Сера',cat:'nonmetal',period:3,group:16},
+  {n:17,sym:'Cl',name:'Хлор',cat:'halogen',period:3,group:17},
+  {n:18,sym:'Ar',name:'Аргон',cat:'noble',period:3,group:18},
+  // period 4
+  {n:19,sym:'K',name:'Калий',cat:'alkali',period:4,group:1},
+  {n:20,sym:'Ca',name:'Кальций',cat:'alkali-earth',period:4,group:2},
+  {n:21,sym:'Sc',name:'Скандий',cat:'transition',period:4,group:3},
+  {n:22,sym:'Ti',name:'Титан',cat:'transition',period:4,group:4},
+  {n:23,sym:'V',name:'Ванадий',cat:'transition',period:4,group:5},
+  {n:24,sym:'Cr',name:'Хром',cat:'transition',period:4,group:6},
+  {n:25,sym:'Mn',name:'Марганец',cat:'transition',period:4,group:7},
+  {n:26,sym:'Fe',name:'Железо',cat:'transition',period:4,group:8},
+  {n:27,sym:'Co',name:'Кобальт',cat:'transition',period:4,group:9},
+  {n:28,sym:'Ni',name:'Никель',cat:'transition',period:4,group:10},
+  {n:29,sym:'Cu',name:'Медь',cat:'transition',period:4,group:11},
+  {n:30,sym:'Zn',name:'Цинк',cat:'transition',period:4,group:12},
+  {n:31,sym:'Ga',name:'Галлий',cat:'post-transition',period:4,group:13},
+  {n:32,sym:'Ge',name:'Германий',cat:'metalloid',period:4,group:14},
+  {n:33,sym:'As',name:'Мышьяк',cat:'metalloid',period:4,group:15},
+  {n:34,sym:'Se',name:'Селен',cat:'nonmetal',period:4,group:16},
+  {n:35,sym:'Br',name:'Бром',cat:'halogen',period:4,group:17},
+  {n:36,sym:'Kr',name:'Криптон',cat:'noble',period:4,group:18},
+  // period 5
+  {n:37,sym:'Rb',name:'Рубидий',cat:'alkali',period:5,group:1},
+  {n:38,sym:'Sr',name:'Стронций',cat:'alkali-earth',period:5,group:2},
+  {n:39,sym:'Y',name:'Иттрий',cat:'transition',period:5,group:3},
+  {n:40,sym:'Zr',name:'Цирконий',cat:'transition',period:5,group:4},
+  {n:41,sym:'Nb',name:'Ниобий',cat:'transition',period:5,group:5},
+  {n:42,sym:'Mo',name:'Молибден',cat:'transition',period:5,group:6},
+  {n:43,sym:'Tc',name:'Технеций',cat:'transition',period:5,group:7},
+  {n:44,sym:'Ru',name:'Рутений',cat:'transition',period:5,group:8},
+  {n:45,sym:'Rh',name:'Родий',cat:'transition',period:5,group:9},
+  {n:46,sym:'Pd',name:'Палладий',cat:'transition',period:5,group:10},
+  {n:47,sym:'Ag',name:'Серебро',cat:'transition',period:5,group:11},
+  {n:48,sym:'Cd',name:'Кадмий',cat:'transition',period:5,group:12},
+  {n:49,sym:'In',name:'Индий',cat:'post-transition',period:5,group:13},
+  {n:50,sym:'Sn',name:'Олово',cat:'post-transition',period:5,group:14},
+  {n:51,sym:'Sb',name:'Сурьма',cat:'metalloid',period:5,group:15},
+  {n:52,sym:'Te',name:'Теллур',cat:'metalloid',period:5,group:16},
+  {n:53,sym:'I',name:'Йод',cat:'halogen',period:5,group:17},
+  {n:54,sym:'Xe',name:'Ксенон',cat:'noble',period:5,group:18},
+  // period 6
+  {n:55,sym:'Cs',name:'Цезий',cat:'alkali',period:6,group:1},
+  {n:56,sym:'Ba',name:'Барий',cat:'alkali-earth',period:6,group:2},
+  {n:57,sym:'La',name:'Лантан',cat:'lanthanide',period:6,group:3},
+  {n:72,sym:'Hf',name:'Гафний',cat:'transition',period:6,group:4},
+  {n:73,sym:'Ta',name:'Тантал',cat:'transition',period:6,group:5},
+  {n:74,sym:'W',name:'Вольфрам',cat:'transition',period:6,group:6},
+  {n:75,sym:'Re',name:'Рений',cat:'transition',period:6,group:7},
+  {n:76,sym:'Os',name:'Осмий',cat:'transition',period:6,group:8},
+  {n:77,sym:'Ir',name:'Иридий',cat:'transition',period:6,group:9},
+  {n:78,sym:'Pt',name:'Платина',cat:'transition',period:6,group:10},
+  {n:79,sym:'Au',name:'Золото',cat:'transition',period:6,group:11},
+  {n:80,sym:'Hg',name:'Ртуть',cat:'transition',period:6,group:12},
+  {n:81,sym:'Tl',name:'Таллий',cat:'post-transition',period:6,group:13},
+  {n:82,sym:'Pb',name:'Свинец',cat:'post-transition',period:6,group:14},
+  {n:83,sym:'Bi',name:'Висмут',cat:'post-transition',period:6,group:15},
+  {n:84,sym:'Po',name:'Полоний',cat:'post-transition',period:6,group:16},
+  {n:85,sym:'At',name:'Астат',cat:'halogen',period:6,group:17},
+  {n:86,sym:'Rn',name:'Радон',cat:'noble',period:6,group:18},
+  // period 7
+  {n:87,sym:'Fr',name:'Франций',cat:'alkali',period:7,group:1},
+  {n:88,sym:'Ra',name:'Радий',cat:'alkali-earth',period:7,group:2},
+  {n:89,sym:'Ac',name:'Актиний',cat:'actinide',period:7,group:3},
+  {n:104,sym:'Rf',name:'Резерфордий',cat:'transition',period:7,group:4},
+  {n:105,sym:'Db',name:'Дубний',cat:'transition',period:7,group:5},
+  {n:106,sym:'Sg',name:'Сиборгий',cat:'transition',period:7,group:6},
+  {n:107,sym:'Bh',name:'Борий',cat:'transition',period:7,group:7},
+  {n:108,sym:'Hs',name:'Хассий',cat:'transition',period:7,group:8},
+  {n:109,sym:'Mt',name:'Мейтнерий',cat:'transition',period:7,group:9},
+  {n:110,sym:'Ds',name:'Дармштадтий',cat:'transition',period:7,group:10},
+  {n:111,sym:'Rg',name:'Рентгений',cat:'transition',period:7,group:11},
+  {n:112,sym:'Cn',name:'Коперниций',cat:'transition',period:7,group:12},
+  {n:113,sym:'Nh',name:'Нихоний',cat:'post-transition',period:7,group:13},
+  {n:114,sym:'Fl',name:'Флеровий',cat:'post-transition',period:7,group:14},
+  {n:115,sym:'Mc',name:'Московий',cat:'post-transition',period:7,group:15},
+  {n:116,sym:'Lv',name:'Ливерморий',cat:'post-transition',period:7,group:16},
+  {n:117,sym:'Ts',name:'Теннессин',cat:'halogen',period:7,group:17},
+  {n:118,sym:'Og',name:'Оганесон',cat:'noble',period:7,group:18},
+  // lanthanides
+  {n:58,sym:'Ce',name:'Церий',cat:'lanthanide',period:8,group:4},
+  {n:59,sym:'Pr',name:'Празеодим',cat:'lanthanide',period:8,group:5},
+  {n:60,sym:'Nd',name:'Неодим',cat:'lanthanide',period:8,group:6},
+  {n:61,sym:'Pm',name:'Прометий',cat:'lanthanide',period:8,group:7},
+  {n:62,sym:'Sm',name:'Самарий',cat:'lanthanide',period:8,group:8},
+  {n:63,sym:'Eu',name:'Европий',cat:'lanthanide',period:8,group:9},
+  {n:64,sym:'Gd',name:'Гадолиний',cat:'lanthanide',period:8,group:10},
+  {n:65,sym:'Tb',name:'Тербий',cat:'lanthanide',period:8,group:11},
+  {n:66,sym:'Dy',name:'Диспрозий',cat:'lanthanide',period:8,group:12},
+  {n:67,sym:'Ho',name:'Гольмий',cat:'lanthanide',period:8,group:13},
+  {n:68,sym:'Er',name:'Эрбий',cat:'lanthanide',period:8,group:14},
+  {n:69,sym:'Tm',name:'Тулий',cat:'lanthanide',period:8,group:15},
+  {n:70,sym:'Yb',name:'Иттербий',cat:'lanthanide',period:8,group:16},
+  {n:71,sym:'Lu',name:'Лютеций',cat:'lanthanide',period:8,group:17},
+  // actinides
+  {n:90,sym:'Th',name:'Торий',cat:'actinide',period:9,group:4},
+  {n:91,sym:'Pa',name:'Протактиний',cat:'actinide',period:9,group:5},
+  {n:92,sym:'U',name:'Уран',cat:'actinide',period:9,group:6},
+  {n:93,sym:'Np',name:'Нептуний',cat:'actinide',period:9,group:7},
+  {n:94,sym:'Pu',name:'Плутоний',cat:'actinide',period:9,group:8},
+  {n:95,sym:'Am',name:'Америций',cat:'actinide',period:9,group:9},
+  {n:96,sym:'Cm',name:'Кюрий',cat:'actinide',period:9,group:10},
+  {n:97,sym:'Bk',name:'Берклий',cat:'actinide',period:9,group:11},
+  {n:98,sym:'Cf',name:'Калифорний',cat:'actinide',period:9,group:12},
+  {n:99,sym:'Es',name:'Эйнштейний',cat:'actinide',period:9,group:13},
+  {n:100,sym:'Fm',name:'Фермий',cat:'actinide',period:9,group:14},
+  {n:101,sym:'Md',name:'Менделевий',cat:'actinide',period:9,group:15},
+  {n:102,sym:'No',name:'Нобелий',cat:'actinide',period:9,group:16},
+  {n:103,sym:'Lr',name:'Лоуренсий',cat:'actinide',period:9,group:17},
+];
+
+const catColors = {
+  'alkali':         { bg:'#3d1a1a', label:'Щелочные металлы' },
+  'alkali-earth':   { bg:'#3d2a1a', label:'Щелочноземельные' },
+  'transition':     { bg:'#1a2a3d', label:'Переходные металлы' },
+  'post-transition':{ bg:'#1a3d2a', label:'Постпереходные' },
+  'metalloid':      { bg:'#2a3d1a', label:'Металлоиды' },
+  'nonmetal':       { bg:'#1a3d3d', label:'Неметаллы' },
+  'halogen':        { bg:'#2a1a3d', label:'Галогены' },
+  'noble':          { bg:'#3d1a3d', label:'Благородные газы' },
+  'lanthanide':     { bg:'#3d3d1a', label:'Лантаниды' },
+  'actinide':       { bg:'#2a2a1a', label:'Актиниды' },
+};
+
+// ============================================================
+// COMPOUNDS DATABASE
+// ============================================================
+// Key: sorted symbol array joined by '+', value counts like 'H:2,O:1'
+// We use a flexible matching system
+
+const compounds = [
+  // Water & simple oxides
+  {
+    match: {H:2, O:1}, formula:'H₂O', name:'Вода', iupac:'оксид водорода',
+    molar:'18.015 г/моль', state:'жидкость', mp:'0 °C', bp:'100 °C', density:'1.00 г/см³',
+    color:'Бесцветная', solubility:'—', hazard:'Безопасна',
+    uses:'Универсальный растворитель, основа жизни на Земле, теплоноситель, участвует во всех биохимических процессах.'
+  },
+  {
+    match: {H:2, O:2}, formula:'H₂O₂', name:'Перекись водорода', iupac:'пероксид водорода',
+    molar:'34.015 г/моль', state:'жидкость', mp:'-0.43 °C', bp:'150.2 °C', density:'1.45 г/см³',
+    color:'Бесцветная', solubility:'∞ в воде', hazard:'Окислитель, раздражитель',
+    uses:'Антисептик, отбеливатель, ракетное топливо (концентрированная), производство химикатов.'
+  },
+  {
+    match: {C:1, O:2}, formula:'CO₂', name:'Углекислый газ', iupac:'диоксид углерода',
+    molar:'44.009 г/моль', state:'газ', mp:'-56.6 °C', bp:'-78.5 °C (субл.)', density:'1.98 г/л (газ)',
+    color:'Бесцветный', solubility:'1.45 г/л', hazard:'Асфиксант при высоких конц.',
+    uses:'Газированные напитки, пожаротушение, сухой лёд, промышленный синтез карбонатов, парниковый газ.'
+  },
+  {
+    match: {C:1, O:1}, formula:'CO', name:'Угарный газ', iupac:'монооксид углерода',
+    molar:'28.010 г/моль', state:'газ', mp:'-205 °C', bp:'-191.5 °C', density:'1.25 г/л',
+    color:'Бесцветный', solubility:'0.028 г/л', hazard:'⚠️ Высокотоксичен',
+    uses:'Синтез-газ для химической промышленности, металлургия (восстановитель), производство метанола.'
+  },
+  // NaCl and salts
+  {
+    match: {Na:1, Cl:1}, formula:'NaCl', name:'Хлорид натрия (поваренная соль)', iupac:'хлорид натрия',
+    molar:'58.44 г/моль', state:'твёрдое', mp:'801 °C', bp:'1413 °C', density:'2.165 г/см³',
+    color:'Белый кристалл', solubility:'360 г/л', hazard:'Безопасен',
+    uses:'Пищевая добавка, консервант, производство хлора и каустической соды, антиобледенитель дорог.'
+  },
+  {
+    match: {K:1, Cl:1}, formula:'KCl', name:'Хлорид калия', iupac:'хлорид калия',
+    molar:'74.55 г/моль', state:'твёрдое', mp:'770 °C', bp:'1420 °C (разл.)', density:'1.984 г/см³',
+    color:'Белый', solubility:'344 г/л', hazard:'Безопасен в норме',
+    uses:'Удобрение (поташ), заменитель соли в медицине, производство KOH.'
+  },
+  // Acids
+  {
+    match: {H:2, S:1, O:4}, formula:'H₂SO₄', name:'Серная кислота', iupac:'сульфат водорода',
+    molar:'98.08 г/моль', state:'жидкость', mp:'10 °C', bp:'337 °C', density:'1.84 г/см³',
+    color:'Бесцветная маслянистая', solubility:'∞ в воде', hazard:'⚠️ Сильная кислота, коррозионна',
+    uses:'Производство удобрений (суперфосфат), нефтепереработка, аккумуляторы, металлургия, химический синтез.'
+  },
+  {
+    match: {H:1, Cl:1}, formula:'HCl', name:'Соляная кислота', iupac:'хлороводород',
+    molar:'36.46 г/моль', state:'газ/р-р', mp:'-114.2 °C', bp:'-85.1 °C', density:'1.49 г/л (газ)',
+    color:'Бесцветный', solubility:'720 г/л', hazard:'⚠️ Коррозионна, раздражает дыхательные пути',
+    uses:'Травление металлов, производство ПВХ, пищевая промышленность (E507), pH-регулятор, органический синтез.'
+  },
+  {
+    match: {H:1, F:1}, formula:'HF', name:'Фтороводородная кислота', iupac:'фторид водорода',
+    molar:'20.01 г/моль', state:'газ/жидкость', mp:'-83.6 °C', bp:'19.5 °C', density:'0.988 г/мл',
+    color:'Бесцветная', solubility:'∞ в воде', hazard:'⚠️ Сильный яд, разъедает стекло',
+    uses:'Травление стекла и кремния, синтез фторполимеров (тефлон), производство алюминия, катализ.'
+  },
+  {
+    match: {H:3, N:1, O:3}, formula:'HNO₃', name:'Азотная кислота', iupac:'нитрат водорода',
+    molar:'63.01 г/моль', state:'жидкость', mp:'-42 °C', bp:'83 °C', density:'1.51 г/см³',
+    color:'Бесцветная (чистая)', solubility:'∞ в воде', hazard:'⚠️ Сильный окислитель, коррозионна',
+    uses:'Производство удобрений (аммиачная селитра), взрывчатые вещества, нитрование в органическом синтезе.'
+  },
+  {
+    match: {H:3, P:1, O:4}, formula:'H₃PO₄', name:'Фосфорная кислота', iupac:'ортофосфорная кислота',
+    molar:'97.99 г/моль', state:'твёрдое/жидкость', mp:'42.4 °C', bp:'407 °C', density:'1.885 г/см³',
+    color:'Бесцветная', solubility:'∞ в воде', hazard:'Умеренный раздражитель',
+    uses:'Производство удобрений, пищевая добавка E338 (Cola), очистка металлов, биологические буферы.'
+  },
+  // Iron oxides
+  {
+    match: {Fe:2, O:3}, formula:'Fe₂O₃', name:'Оксид железа(III)', iupac:'триоксид дижелеза',
+    molar:'159.69 г/моль', state:'твёрдое', mp:'1565 °C', bp:'~3414 °C', density:'5.25 г/см³',
+    color:'Красно-коричневый', solubility:'Нерастворим', hazard:'Малотоксичен',
+    uses:'Красный пигмент (охра), производство стали, полировальный порошок, магнитные носители (гематит).'
+  },
+  {
+    match: {Fe:3, O:4}, formula:'Fe₃O₄', name:'Магнетит', iupac:'тетраоксид трижелеза',
+    molar:'231.53 г/моль', state:'твёрдое', mp:'1597 °C', bp:'—', density:'5.17 г/см³',
+    color:'Чёрный', solubility:'Нерастворим', hazard:'Малотоксичен',
+    uses:'Природный магнит, производство стали, пигмент, катализатор синтеза аммиака, нанотехнологии.'
+  },
+  {
+    match: {Fe:1, O:1}, formula:'FeO', name:'Оксид железа(II)', iupac:'монооксид железа',
+    molar:'71.84 г/моль', state:'твёрдое', mp:'1377 °C', bp:'—', density:'5.74 г/см³',
+    color:'Чёрный', solubility:'Нерастворим', hazard:'Малотоксичен',
+    uses:'Зелёный пигмент в стекле, производство стали, керамика.'
+  },
+  // Ammonia & nitrogen compounds
+  {
+    match: {N:1, H:3}, formula:'NH₃', name:'Аммиак', iupac:'нитрид водорода',
+    molar:'17.03 г/моль', state:'газ', mp:'-77.7 °C', bp:'-33.4 °C', density:'0.69 г/л',
+    color:'Бесцветный', solubility:'899 г/л', hazard:'⚠️ Токсичен, едкий запах',
+    uses:'Производство удобрений (карбамид, аммиачная селитра), холодильные агенты, синтез азотной кислоты, очистители.'
+  },
+  {
+    match: {N:2, O:1}, formula:'N₂O', name:'Закись азота', iupac:'оксид диазота',
+    molar:'44.013 г/моль', state:'газ', mp:'-90.9 °C', bp:'-88.5 °C', density:'1.98 г/л',
+    color:'Бесцветный', solubility:'1.5 г/л', hazard:'Слабый наркотик, парниковый газ',
+    uses:'Анестезия (веселящий газ), пищевой пропеллент (взбитые сливки), ракетное окислительное топливо.'
+  },
+  {
+    match: {N:2, O:5}, formula:'N₂O₅', name:'Пятиокись азота', iupac:'пентаоксид диазота',
+    molar:'108.01 г/моль', state:'твёрдое', mp:'30 °C', bp:'47 °C (разл.)', density:'1.64 г/см³',
+    color:'Белый', solubility:'Реаг. с водой', hazard:'⚠️ Сильный окислитель',
+    uses:'Нитрование в органической химии, производство взрывчатых веществ.'
+  },
+  // Calcium compounds
+  {
+    match: {Ca:1, O:1}, formula:'CaO', name:'Негашёная известь', iupac:'оксид кальция',
+    molar:'56.08 г/моль', state:'твёрдое', mp:'2613 °C', bp:'2850 °C', density:'3.35 г/см³',
+    color:'Белый', solubility:'1.85 г/л (реаг.)', hazard:'Раздражитель, щёлочь',
+    uses:'Строительство (строительная известь), металлургия, производство цемента, нейтрализация кислот.'
+  },
+  {
+    match: {Ca:1, O:2, H:2}, formula:'Ca(OH)₂', name:'Гашёная известь', iupac:'гидроксид кальция',
+    molar:'74.09 г/моль', state:'твёрдое', mp:'580 °C (разл.)', bp:'—', density:'2.21 г/см³',
+    color:'Белый', solubility:'1.73 г/л', hazard:'Щёлочь, раздражитель',
+    uses:'Побелка, производство цемента, очистка воды, нейтрализация кислот в промышленности.'
+  },
+  {
+    match: {Ca:1, C:1, O:3}, formula:'CaCO₃', name:'Карбонат кальция', iupac:'карбонат кальция',
+    molar:'100.09 г/моль', state:'твёрдое', mp:'1339 °C (разл.)', bp:'—', density:'2.71 г/см³',
+    color:'Белый', solubility:'0.013 г/л', hazard:'Безопасен',
+    uses:'Мел, известняк, мрамор, цемент, стекло, антацид (сода при изжоге), бумажное производство.'
+  },
+  // Silicon
+  {
+    match: {Si:1, O:2}, formula:'SiO₂', name:'Диоксид кремния', iupac:'диоксид кремния',
+    molar:'60.08 г/моль', state:'твёрдое', mp:'1710 °C', bp:'2950 °C', density:'2.65 г/см³',
+    color:'Бесцветный (кварц)', solubility:'Нерастворим', hazard:'Пыль вызывает силикоз',
+    uses:'Стекло, кварц, полупроводники, волоконная оптика, наполнитель, силикагель, огнеупоры.'
+  },
+  // Sodium compounds
+  {
+    match: {Na:2, O:1}, formula:'Na₂O', name:'Оксид натрия', iupac:'оксид натрия',
+    molar:'61.98 г/моль', state:'твёрдое', mp:'1275 °C', bp:'—', density:'2.27 г/см³',
+    color:'Белый', solubility:'Реаг. с водой', hazard:'⚠️ Щёлочь, коррозионен',
+    uses:'Промежуточный продукт в производстве стекла и NaOH.'
+  },
+  {
+    match: {Na:1, O:1, H:1}, formula:'NaOH', name:'Каустическая сода', iupac:'гидроксид натрия',
+    molar:'39.997 г/моль', state:'твёрдое', mp:'318 °C', bp:'1388 °C', density:'2.13 г/см³',
+    color:'Белый', solubility:'1110 г/л', hazard:'⚠️ Сильная щёлочь, вызывает ожоги',
+    uses:'Мыловарение, производство бумаги (целлюлоза), алюминиевая промышленность, очистка сточных вод, пищевая добавка E524.'
+  },
+  {
+    match: {Na:2, C:1, O:3}, formula:'Na₂CO₃', name:'Карбонат натрия (сода)', iupac:'карбонат натрия',
+    molar:'105.99 г/моль', state:'твёрдое', mp:'851 °C', bp:'—', density:'2.54 г/см³',
+    color:'Белый', solubility:'215 г/л', hazard:'Слабый раздражитель',
+    uses:'Стеклопроизводство, мыловарение, моющие средства, смягчение воды, пищевая добавка E500.'
+  },
+  // Aluminium
+  {
+    match: {Al:2, O:3}, formula:'Al₂O₃', name:'Оксид алюминия (корунд)', iupac:'триоксид диалюминия',
+    molar:'101.96 г/моль', state:'твёрдое', mp:'2072 °C', bp:'2977 °C', density:'3.99 г/см³',
+    color:'Белый (рубин, сапфир — примеси)', solubility:'Нерастворим', hazard:'Малотоксичен',
+    uses:'Абразив (корунд), рубины и сапфиры (ювелирка), производство алюминия, огнеупоры, катализатор.'
+  },
+  // Sulfur compounds
+  {
+    match: {S:1, O:2}, formula:'SO₂', name:'Диоксид серы', iupac:'диоксид серы',
+    molar:'64.06 г/моль', state:'газ', mp:'-72 °C', bp:'-10 °C', density:'2.93 г/л',
+    color:'Бесцветный', solubility:'113 г/л', hazard:'⚠️ Токсичен, кислотный дождь',
+    uses:'Консервант (E220), производство серной кислоты, отбеливание, охлаждающий агент.'
+  },
+  {
+    match: {S:1, O:3}, formula:'SO₃', name:'Триоксид серы', iupac:'триоксид серы',
+    molar:'80.06 г/моль', state:'жидкость/газ', mp:'16.9 °C', bp:'45 °C', density:'1.92 г/мл',
+    color:'Бесцветный', solubility:'Реаг. с водой', hazard:'⚠️ Высококоррозионен',
+    uses:'Промежуточный продукт производства серной кислоты (контактный метод).'
+  },
+  {
+    match: {H:2, S:1}, formula:'H₂S', name:'Сероводород', iupac:'сульфид водорода',
+    molar:'34.08 г/моль', state:'газ', mp:'-85.5 °C', bp:'-60.3 °C', density:'1.36 г/л',
+    color:'Бесцветный', solubility:'3.9 г/л', hazard:'⚠️ Токсичен (запах тухлых яиц)',
+    uses:'Производство серной кислоты, химический анализ (осаждение металлов), синтез серосодержащих соединений.'
+  },
+  // Chlorine oxides
+  {
+    match: {Cl:2, O:7}, formula:'Cl₂O₇', name:'Оксид хлора(VII)', iupac:'гептаоксид дихлора',
+    molar:'182.9 г/моль', state:'жидкость', mp:'-91.5 °C', bp:'82 °C', density:'1.9 г/мл',
+    color:'Бесцветная', solubility:'Реаг. с водой', hazard:'⚠️ Взрывоопасен, сильный окислитель',
+    uses:'Производство хлорной кислоты, лабораторный реагент.'
+  },
+  // Phosphorus
+  {
+    match: {P:4, O:10}, formula:'P₄O₁₀', name:'Оксид фосфора(V)', iupac:'декаоксид тетрафосфора',
+    molar:'283.89 г/моль', state:'твёрдое', mp:'340 °C', bp:'360 °C (субл.)', density:'2.30 г/см³',
+    color:'Белый', solubility:'Реаг. с водой', hazard:'⚠️ Коррозионен, осушитель',
+    uses:'Мощный осушитель, производство фосфорной кислоты, реагент в органическом синтезе.'
+  },
+  // Carbon compounds
+  {
+    match: {C:1, H:4}, formula:'CH₄', name:'Метан', iupac:'метан',
+    molar:'16.04 г/моль', state:'газ', mp:'-182 °C', bp:'-161.5 °C', density:'0.656 г/л',
+    color:'Бесцветный', solubility:'0.024 г/л', hazard:'Горючий, взрывоопасен',
+    uses:'Природный газ (топливо), производство водорода, синтез-газ, химическое сырьё.'
+  },
+  {
+    match: {C:2, H:6}, formula:'C₂H₆', name:'Этан', iupac:'этан',
+    molar:'30.07 г/моль', state:'газ', mp:'-183 °C', bp:'-89 °C', density:'1.356 г/л',
+    color:'Бесцветный', solubility:'Слабая', hazard:'Горючий',
+    uses:'Производство этилена (пиролиз), топливо.'
+  },
+  {
+    match: {C:2, H:4}, formula:'C₂H₄', name:'Этилен', iupac:'этен',
+    molar:'28.05 г/моль', state:'газ', mp:'-169 °C', bp:'-104 °C', density:'1.18 г/л',
+    color:'Бесцветный', solubility:'0.13 г/л', hazard:'Горючий',
+    uses:'Производство полиэтилена, этилового спирта, ПВХ, созревание фруктов (фитогормон).'
+  },
+  {
+    match: {C:2, H:2}, formula:'C₂H₂', name:'Ацетилен', iupac:'этин',
+    molar:'26.04 г/моль', state:'газ', mp:'-80.8 °C', bp:'-84 °C (субл.)', density:'1.09 г/л',
+    color:'Бесцветный', solubility:'1.1 г/л', hazard:'⚠️ Взрывоопасен',
+    uses:'Сварка и резка металлов (газосварка), производство ПВХ, акриловой кислоты, синтетического каучука.'
+  },
+  {
+    match: {C:1, H:2, O:1}, formula:'CH₂O', name:'Формальдегид', iupac:'метаналь',
+    molar:'30.03 г/моль', state:'газ', mp:'-92 °C', bp:'-19 °C', density:'1.09 г/л',
+    color:'Бесцветный', solubility:'550 г/л', hazard:'⚠️ Канцероген, токсичен',
+    uses:'Производство фенолформальдегидных смол, дезинфектант (формалин), консервант.'
+  },
+  {
+    match: {C:2, H:6, O:1}, formula:'C₂H₅OH', name:'Этиловый спирт', iupac:'этанол',
+    molar:'46.07 г/моль', state:'жидкость', mp:'-114.1 °C', bp:'78.4 °C', density:'0.789 г/мл',
+    color:'Бесцветная', solubility:'∞ в воде', hazard:'Горючий, наркотик',
+    uses:'Алкогольные напитки, антисептик, растворитель, топливо (биоэтанол), синтез органических веществ.'
+  },
+  // Copper compounds
+  {
+    match: {Cu:1, O:1}, formula:'CuO', name:'Оксид меди(II)', iupac:'оксид меди',
+    molar:'79.55 г/моль', state:'твёрдое', mp:'1326 °C', bp:'2000 °C (разл.)', density:'6.32 г/см³',
+    color:'Чёрный', solubility:'Нерастворим', hazard:'Умеренно токсичен',
+    uses:'Пигмент в стекле и керамике, катализатор, производство медных сплавов, фунгицид.'
+  },
+  {
+    match: {Cu:2, O:1}, formula:'Cu₂O', name:'Оксид меди(I)', iupac:'оксид димеди',
+    molar:'143.09 г/моль', state:'твёрдое', mp:'1232 °C', bp:'1800 °C', density:'6.10 г/см³',
+    color:'Красный/оранжевый', solubility:'Нерастворим', hazard:'Умеренно токсичен',
+    uses:'Антифунгицидное покрытие для лодок (противообрастающий), пигмент, полупроводник.'
+  },
+  {
+    match: {Cu:1, S:1, O:5, H:2}, formula:'CuSO₄·5H₂O', name:'Медный купорос', iupac:'пентагидрат сульфата меди',
+    molar:'249.69 г/моль', state:'твёрдое', mp:'110 °C (обезвожив.)', bp:'—', density:'2.29 г/см³',
+    color:'Синий', solubility:'203 г/л', hazard:'Токсичен при проглатывании',
+    uses:'Фунгицид (бордосская жидкость), гальваника, аналитическая химия, краситель, антисептик.'
+  },
+  // More
+  {
+    match: {Mg:1, O:1}, formula:'MgO', name:'Оксид магния (периклаз)', iupac:'оксид магния',
+    molar:'40.30 г/моль', state:'твёрдое', mp:'2852 °C', bp:'3600 °C', density:'3.58 г/см³',
+    color:'Белый', solubility:'0.062 г/л', hazard:'Малотоксичен',
+    uses:'Огнеупоры, антацид (жжёная магнезия), производство цемента, изоляция в нагревательных элементах.'
+  },
+  {
+    match: {Zn:1, O:1}, formula:'ZnO', name:'Оксид цинка', iupac:'оксид цинка',
+    molar:'81.38 г/моль', state:'твёрдое', mp:'1975 °C', bp:'2360 °C', density:'5.61 г/см³',
+    color:'Белый', solubility:'Нерастворим', hazard:'Пары токсичны',
+    uses:'Солнцезащитный крем, белый пигмент, резина (вулканизация), полупроводник, антисептик.'
+  },
+  {
+    match: {Ti:1, O:2}, formula:'TiO₂', name:'Диоксид титана', iupac:'диоксид титана',
+    molar:'79.87 г/моль', state:'твёрдое', mp:'1843 °C', bp:'2972 °C', density:'4.23 г/см³',
+    color:'Белый', solubility:'Нерастворим', hazard:'Малотоксичен',
+    uses:'Белый пигмент (краски, пластики, бумага), солнцезащитные кремы, фотокатализ, пища E171.'
+  },
+  {
+    match: {Mn:1, O:2}, formula:'MnO₂', name:'Диоксид марганца', iupac:'диоксид марганца',
+    molar:'86.94 г/моль', state:'твёрдое', mp:'535 °C (разл.)', bp:'—', density:'5.03 г/см³',
+    color:'Чёрный', solubility:'Нерастворим', hazard:'Умеренно токсичен',
+    uses:'Батарейки (угольно-цинковые), производство стекла (обесцвечивание), окислитель, катализатор.'
+  },
+  {
+    match: {Ag:1, Cl:1}, formula:'AgCl', name:'Хлорид серебра', iupac:'хлорид серебра',
+    molar:'143.32 г/моль', state:'твёрдое', mp:'455 °C', bp:'1547 °C', density:'5.56 г/см³',
+    color:'Белый (темнеет на свету)', solubility:'0.0015 г/л', hazard:'Малотоксичен',
+    uses:'Фотографическая плёнка, электроды сравнения, антимикробные покрытия.'
+  },
+  {
+    match: {Au:2, O:3}, formula:'Au₂O₃', name:'Оксид золота(III)', iupac:'триоксид диазота',
+    molar:'441.93 г/моль', state:'твёрдое', mp:'160 °C (разл.)', bp:'—', density:'—',
+    color:'Коричнево-чёрный', solubility:'Нерастворим', hazard:'Малотоксичен',
+    uses:'Золочение, химические реагенты.'
+  },
+  {
+    match: {N:2, H:4}, formula:'N₂H₄', name:'Гидразин', iupac:'диазан',
+    molar:'32.05 г/моль', state:'жидкость', mp:'2 °C', bp:'114 °C', density:'1.004 г/мл',
+    color:'Бесцветная', solubility:'∞ в воде', hazard:'⚠️ Высокотоксичен, канцероген',
+    uses:'Ракетное топливо (Союз, Протон), производство полимеров, фармацевтика, реагент для аналитики.'
+  },
+  {
+    match: {C:1, N:2}, formula:'C(CN)₂ → записывают CN', name:'Цианид (HCN)', iupac:'цианид',
+    molar:'27.03 г/моль', state:'газ/жидкость', mp:'-13.4 °C', bp:'25.6 °C', density:'0.688 г/мл',
+    color:'Бесцветный', solubility:'Смешивается', hazard:'☠️ Смертельно ядовит',
+    uses:'Золотодобыча (цианирование), производство полимеров (нейлон, акрилонитрил), синтез.'
+  },
+  {
+    match: {C:6, H:12, O:6}, formula:'C₆H₁₂O₆', name:'Глюкоза', iupac:'D-глюкоза',
+    molar:'180.16 г/моль', state:'твёрдое', mp:'146 °C', bp:'—', density:'1.54 г/см³',
+    color:'Белый', solubility:'910 г/л', hazard:'Безопасна',
+    uses:'Основной источник энергии для живых организмов, производство спирта (ферментация), медицина.'
+  },
+  {
+    match: {Na:1, H:1, C:1, O:3}, formula:'NaHCO₃', name:'Пищевая сода', iupac:'гидрокарбонат натрия',
+    molar:'84.01 г/моль', state:'твёрдое', mp:'50 °C (разл.)', bp:'—', density:'2.20 г/см³',
+    color:'Белый', solubility:'96 г/л', hazard:'Безопасна',
+    uses:'Выпечка (разрыхлитель), антацид от изжоги, пожаротушение, нейтрализация кислот, косметика.'
+  },
+  {
+    match: {K:2, C:2, O:4}, formula:'K₂C₂O₄', name:'Оксалат калия', iupac:'оксалат калия',
+    molar:'166.22 г/моль', state:'твёрдое', mp:'160 °C (разл.)', bp:'—', density:'2.13 г/см³',
+    color:'Белый', solubility:'363 г/л', hazard:'Умеренно токсичен',
+    uses:'Аналитическая химия, удаление ржавчины, реагент в фотографии.'
+  },
+  {
+    match: {Cl:2, O:1}, formula:'Cl₂O', name:'Оксид хлора(I)', iupac:'оксид дихлора',
+    molar:'86.90 г/моль', state:'газ', mp:'-116 °C', bp:'2 °C', density:'3.89 г/л',
+    color:'Желтовато-коричневый', solubility:'Реаг. с водой', hazard:'⚠️ Токсичен, окислитель',
+    uses:'Производство гипохлорита, дезинфекция воды, отбеливание целлюлозы.'
+  },
+  {
+    match: {P:1, H:3}, formula:'PH₃', name:'Фосфин', iupac:'фосфин',
+    molar:'33.998 г/моль', state:'газ', mp:'-133.5 °C', bp:'-87.7 °C', density:'1.379 г/л',
+    color:'Бесцветный', solubility:'3.1 г/л', hazard:'☠️ Высокотоксичен',
+    uses:'Фумигант (уничтожение вредителей), производство полупроводников, синтез органофосфатов.'
+  },
+];
+
+// ============================================================
+// NAMED ALLOYS DATABASE
+// ============================================================
+const alloys = [
+  {
+    match: {Fe:1, C:1}, name:'Сталь', formula:'Fe–C',
+    mp:'~1400 °C', density:'7.85 г/см³', color:'Серебристо-серая', state:'твёрдое',
+    hardness:'HRC 20–65 (зависит от термообработки)', conductivity:'Хороший проводник',
+    hazard:'Безопасна', corrosion:'Подвержена коррозии',
+    uses:'Строительство, машиностроение, инструменты, рельсы, трубы — основной конструкционный материал человечества.',
+    note:'Сплав железа с углеродом (0.02–2.14% C). Прочнее чистого железа, поддаётся закалке.'
+  },
+  {
+    match: {Fe:1, C:1, Cr:1}, name:'Нержавеющая сталь', formula:'Fe–Cr–C',
+    mp:'~1450 °C', density:'7.9–8.0 г/см³', color:'Серебристая, блестящая', state:'твёрдое',
+    hardness:'HRC 15–40', conductivity:'Хороший проводник',
+    hazard:'Безопасна', corrosion:'Высокая коррозионная стойкость (хром образует Cr₂O₃)',
+    uses:'Столовые приборы, кухонное оборудование, хирургические инструменты, архитектура, пищевая промышленность.',
+    note:'≥10.5% Cr создаёт пассивирующую оксидную плёнку. Марки: 304, 316, 430.'
+  },
+  {
+    match: {Fe:1, Ni:1}, name:'Инвар (сплав Fe-Ni)', formula:'Fe–Ni (64/36)',
+    mp:'~1430 °C', density:'8.05 г/см³', color:'Серебристо-серая', state:'твёрдое',
+    hardness:'HB 160', conductivity:'Умеренный',
+    hazard:'Безопасен', corrosion:'Умеренная стойкость',
+    uses:'Точные измерительные приборы, эталоны длины, маятники часов, биметаллические элементы, дисплеи.',
+    note:'Коэффициент теплового расширения почти равен нулю (1.2×10⁻⁶/°C) — исключительная стабильность размеров.'
+  },
+  {
+    match: {Cu:1, Sn:1}, name:'Бронза', formula:'Cu–Sn',
+    mp:'~950 °C', density:'8.7–8.9 г/см³', color:'Золотисто-коричневая', state:'твёрдое',
+    hardness:'HB 60–200', conductivity:'Хороший проводник',
+    hazard:'Безопасна', corrosion:'Высокая стойкость (патина — зелёный CuCO₃)',
+    uses:'Монеты, скульптуры, подшипники, шестерни, морские детали, колокола, пружины, медали.',
+    note:'Один из первых сплавов, освоенных человечеством (~3500 до н.э.). Прочнее чистой меди.'
+  },
+  {
+    match: {Cu:1, Zn:1}, name:'Латунь', formula:'Cu–Zn',
+    mp:'~900–940 °C', density:'8.4–8.7 г/см³', color:'Жёлтая, золотистая', state:'твёрдое',
+    hardness:'HB 60–120', conductivity:'Хороший проводник',
+    hazard:'Безопасна', corrosion:'Хорошая стойкость',
+    uses:'Сантехника, музыкальные инструменты (трубы, саксофоны), гильзы патронов, замки, декоративные изделия.',
+    note:'Цвет и свойства зависят от % Zn (10–45%). При >45% Zn — хрупкая β-латунь.'
+  },
+  {
+    match: {Cu:1, Ni:1}, name:'Мельхиор (куниаль)', formula:'Cu–Ni',
+    mp:'~1170–1230 °C', density:'8.9 г/см³', color:'Серебристо-белая', state:'твёрдое',
+    hardness:'HB 90–130', conductivity:'Хороший проводник',
+    hazard:'Безопасен', corrosion:'Отличная стойкость (в т.ч. морская вода)',
+    uses:'Монеты, столовые приборы «под серебро», морские детали, конденсаторные трубки, медицинские инструменты.',
+    note:'Cu:Ni = 75:25 (монетный мельхиор). Не тускнеет, хорошо полируется.'
+  },
+  {
+    match: {Al:1, Cu:1}, name:'Дюралюминий', formula:'Al–Cu (Дуралюмин)',
+    mp:'~630–650 °C', density:'2.78 г/см³', color:'Серебристая', state:'твёрдое',
+    hardness:'HB 100–130 (после закалки)', conductivity:'Хороший проводник',
+    hazard:'Безопасен', corrosion:'Умеренная (хуже чистого Al)',
+    uses:'Авиация и космонавтика (фюзеляжи, крылья), автомобилестроение, велосипеды, спортивный инвентарь.',
+    note:'~4% Cu + ~0.5% Mg + ~0.5% Mn. Прочность сравнима со сталью, масса втрое меньше.'
+  },
+  {
+    match: {Al:1, Mg:1}, name:'Магналий', formula:'Al–Mg',
+    mp:'~600–650 °C', density:'2.55–2.65 г/см³', color:'Серебристо-белая', state:'твёрдое',
+    hardness:'HB 60–80', conductivity:'Хороший проводник',
+    hazard:'Безопасен', corrosion:'Хорошая стойкость',
+    uses:'Авиационные конструкции, автомобильные диски, рамы велосипедов, корпуса ноутбуков, детали судов.',
+    note:'Лёгкий (плотность ~2.6 г/см³) и прочный. Лучше сваривается, чем дюралюминий.'
+  },
+  {
+    match: {Sn:1, Pb:1}, name:'Припой (олово-свинец)', formula:'Sn–Pb',
+    mp:'183–240 °C', density:'8.4–9.4 г/см³', color:'Серебристо-серая', state:'твёрдое',
+    hardness:'HB 10–20', conductivity:'Умеренный проводник',
+    hazard:'⚠️ Свинец токсичен', corrosion:'Умеренная стойкость',
+    uses:'Пайка электроники (классика Sn63Pb37), сантехника, лужение, соединение металлических деталей.',
+    note:'Эвтектика Sn63/Pb37 плавится при 183°C. Современная бессвинцовая пайка использует Sn-Ag-Cu.'
+  },
+  {
+    match: {Ni:1, Ti:1}, name:'Нитинол (нержавеющая память)', formula:'Ni–Ti (Нитинол)',
+    mp:'~1300 °C', density:'6.45 г/см³', color:'Серебристо-серая', state:'твёрдое',
+    hardness:'HRC 30–50', conductivity:'Умеренный',
+    hazard:'Безопасен', corrosion:'Отличная биосовместимость',
+    uses:'Медицинские стенты и имплантаты, ортодонтические дуги, актюаторы, тепловые двигатели, смарт-материалы.',
+    note:'Эффект памяти формы: деформированный при низкой температуре, восстанавливает форму при нагреве.'
+  },
+  {
+    match: {Au:1, Ag:1}, name:'Электрум', formula:'Au–Ag',
+    mp:'~960–1060 °C', density:'12.5–15.5 г/см³', color:'Бледно-жёлтая, золотистая', state:'твёрдое',
+    hardness:'HB 40–70', conductivity:'Отличный проводник',
+    hazard:'Безопасен', corrosion:'Очень высокая стойкость',
+    uses:'Ювелирные изделия, монеты (древний электрум), электрические контакты, декоративные покрытия.',
+    note:'Природный сплав, известный с 3000 до н.э. 20–80% Au. Прочнее чистого золота.'
+  },
+  {
+    match: {Au:1, Cu:1}, name:'Красное золото', formula:'Au–Cu',
+    mp:'~890–960 °C', density:'14.5–17.5 г/см³', color:'Красновато-жёлтая', state:'твёрдое',
+    hardness:'HB 60–100', conductivity:'Хороший проводник',
+    hazard:'Безопасно', corrosion:'Хорошая стойкость',
+    uses:'Ювелирные изделия (18K красное золото ~75% Au), монеты, декоративные покрытия.',
+    note:'Медь придаёт золоту красноватый оттенок и увеличивает прочность.'
+  },
+  {
+    match: {Pb:1, Sb:1}, name:'Типографский сплав', formula:'Pb–Sb',
+    mp:'~252–272 °C', density:'10.2–10.5 г/см³', color:'Серая', state:'твёрдое',
+    hardness:'HB 20–35', conductivity:'Умеренный',
+    hazard:'⚠️ Свинец и сурьма токсичны', corrosion:'Умеренная',
+    uses:'Исторически — типографские литеры и шрифты. Сейчас — подшипники, аккумуляторные пластины.',
+    note:'Сурьма расширяется при затвердевании, что обеспечивает чёткость отливки букв.'
+  },
+  {
+    match: {Zn:1, Cu:1, Ni:1}, name:'Нейзильбер (мельхиор-цинк)', formula:'Cu–Ni–Zn',
+    mp:'~1020 °C', density:'8.7 г/см³', color:'Серебристо-белая', state:'твёрдое',
+    hardness:'HB 100–140', conductivity:'Умеренный',
+    hazard:'Безопасен', corrosion:'Хорошая',
+    uses:'Столовые приборы, клапаны музыкальных инструментов, монеты, оправы для оптики, сувениры.',
+    note:'~60% Cu, ~20% Ni, ~20% Zn. Внешне похож на серебро, но значительно дешевле.'
+  },
+  {
+    match: {Fe:1, Cr:1}, name:'Феррохром', formula:'Fe–Cr',
+    mp:'~1520–1620 °C', density:'6.86–7.0 г/см³', color:'Серебристо-серая', state:'твёрдое',
+    hardness:'HB 200–350', conductivity:'Умеренный',
+    hazard:'Малотоксичен', corrosion:'Высокая стойкость',
+    uses:'Легирующая добавка при производстве нержавеющих и инструментальных сталей, жаропрочных сплавов.',
+    note:'Технический феррохром содержит 50–70% Cr. Ключевой компонент нержавеющей стали.'
+  },
+  {
+    match: {Al:1, Si:1}, name:'Силумин', formula:'Al–Si',
+    mp:'~575–655 °C', density:'2.65–2.7 г/см³', color:'Серебристая', state:'твёрдое',
+    hardness:'HB 60–90', conductivity:'Хороший',
+    hazard:'Безопасен', corrosion:'Хорошая',
+    uses:'Литьё: поршни двигателей, корпуса насосов, детали автомобилей, сантехническая арматура.',
+    note:'10–13% Si. Отличные литейные свойства: малая усадка, хорошая жидкотекучесть.'
+  },
+  {
+    match: {W:1, C:1}, name:'Карбид вольфрама (твёрдый сплав)', formula:'WC',
+    mp:'~2870 °C', density:'15.63 г/см³', color:'Серо-чёрная', state:'твёрдое',
+    hardness:'HV 2400 (9–9.5 по Моосу)', conductivity:'Умеренный',
+    hazard:'Пыль опасна при вдыхании', corrosion:'Очень высокая стойкость',
+    uses:'Режущий инструмент (свёрла, фрезы), бронебойные снаряды, горнодобывающие буры, ювелирные украшения.',
+    note:'Один из твёрдейших известных материалов. Сравним с алмазом по твёрдости. Используется в твёрдых сплавах (ВК, ТК).'
+  },
+  {
+    match: {Co:1, Cr:1}, name:'Виталиум (Co-Cr)', formula:'Co–Cr',
+    mp:'~1350–1450 °C', density:'8.3–8.5 г/см³', color:'Серебристая', state:'твёрдое',
+    hardness:'HRC 35–45', conductivity:'Умеренный',
+    hazard:'Биосовместим', corrosion:'Превосходная',
+    uses:'Ортопедические имплантаты (тазобедренные суставы), зубные протезы, авиационные турбины, хирургические инструменты.',
+    note:'Высокая биосовместимость и жаропрочность. Широко применяется в медицине с 1930-х годов.'
+  },
+  {
+    match: {Bi:1, Pb:1, Sn:1}, name:'Сплав Вуда', formula:'Bi–Pb–Sn–Cd',
+    mp:'~70 °C', density:'9.72 г/см³', color:'Серебристо-серая', state:'твёрдое',
+    hardness:'HB 10', conductivity:'Умеренный',
+    hazard:'⚠️ Кадмий и свинец токсичны', corrosion:'Умеренная',
+    uses:'Предохранительные клапаны, пожарные спринклеры (плавкая вставка), модельное литьё, калибровка термометров.',
+    note:'Плавится в горячей воде (~70°C). Историческая эвтектика: 50% Bi, 26.7% Pb, 13.3% Sn, 10% Cd.'
+  },
+  {
+    match: {Mg:1, Al:1, Zn:1}, name:'Электрон (магниевый сплав)', formula:'Mg–Al–Zn',
+    mp:'~430–600 °C', density:'1.75–1.83 г/см³', color:'Серебристо-белая', state:'твёрдое',
+    hardness:'HB 50–70', conductivity:'Хороший',
+    hazard:'Горит при нагреве!', corrosion:'Низкая (нужна защита)',
+    uses:'Авиакосмос, гоночные автомобили, спортивный инвентарь, ноутбуки, камеры — самый лёгкий конструкционный сплав.',
+    note:'Самый лёгкий из металлических конструкционных материалов. Плотность втрое меньше стали.'
+  },
+];
+
+// ============================================================
+// ELEMENT PHYSICAL DATA (for mixture generator)
+// ============================================================
+const elProps = {
+  H:  {mass:1.008,  mp:-259, density:0.09,    metal:false, color:'бесцветный'},
+  He: {mass:4.003,  mp:-272, density:0.18,    metal:false, color:'бесцветный'},
+  Li: {mass:6.941,  mp:180,  density:0.53,    metal:true,  color:'серебристый'},
+  Be: {mass:9.012,  mp:1287, density:1.85,    metal:true,  color:'серовато-белый'},
+  B:  {mass:10.81,  mp:2076, density:2.34,    metal:false, color:'коричнево-чёрный'},
+  C:  {mass:12.01,  mp:3550, density:2.27,    metal:false, color:'чёрный (графит)'},
+  N:  {mass:14.01,  mp:-210, density:1.25,    metal:false, color:'бесцветный'},
+  O:  {mass:16.00,  mp:-219, density:1.43,    metal:false, color:'бесцветный'},
+  F:  {mass:19.00,  mp:-220, density:1.70,    metal:false, color:'бледно-жёлтый'},
+  Ne: {mass:20.18,  mp:-249, density:0.90,    metal:false, color:'бесцветный'},
+  Na: {mass:22.99,  mp:98,   density:0.97,    metal:true,  color:'серебристый'},
+  Mg: {mass:24.31,  mp:650,  density:1.74,    metal:true,  color:'серебристо-белый'},
+  Al: {mass:26.98,  mp:660,  density:2.70,    metal:true,  color:'серебристый'},
+  Si: {mass:28.09,  mp:1414, density:2.33,    metal:false, color:'серый, металлический блеск'},
+  P:  {mass:30.97,  mp:44,   density:1.82,    metal:false, color:'белый/красный'},
+  S:  {mass:32.07,  mp:113,  density:2.07,    metal:false, color:'жёлтый'},
+  Cl: {mass:35.45,  mp:-101, density:3.21,    metal:false, color:'жёлто-зелёный'},
+  Ar: {mass:39.95,  mp:-189, density:1.78,    metal:false, color:'бесцветный'},
+  K:  {mass:39.10,  mp:64,   density:0.86,    metal:true,  color:'серебристый'},
+  Ca: {mass:40.08,  mp:842,  density:1.55,    metal:true,  color:'серебристо-белый'},
+  Sc: {mass:44.96,  mp:1541, density:2.99,    metal:true,  color:'серебристый'},
+  Ti: {mass:47.87,  mp:1668, density:4.51,    metal:true,  color:'серебристый'},
+  V:  {mass:50.94,  mp:1910, density:6.11,    metal:true,  color:'голубовато-серый'},
+  Cr: {mass:52.00,  mp:1907, density:7.19,    metal:true,  color:'серебристо-серый'},
+  Mn: {mass:54.94,  mp:1246, density:7.47,    metal:true,  color:'серебристо-серый'},
+  Fe: {mass:55.85,  mp:1538, density:7.87,    metal:true,  color:'серебристо-серый'},
+  Co: {mass:58.93,  mp:1495, density:8.90,    metal:true,  color:'серебристо-серый'},
+  Ni: {mass:58.69,  mp:1455, density:8.91,    metal:true,  color:'серебристо-белый'},
+  Cu: {mass:63.55,  mp:1085, density:8.96,    metal:true,  color:'медно-красный'},
+  Zn: {mass:65.38,  mp:420,  density:7.13,    metal:true,  color:'голубовато-серый'},
+  Ga: {mass:69.72,  mp:30,   density:5.91,    metal:true,  color:'серебристый'},
+  Ge: {mass:72.63,  mp:938,  density:5.32,    metal:false, color:'серый с металлическим блеском'},
+  As: {mass:74.92,  mp:817,  density:5.73,    metal:false, color:'серый металлоид'},
+  Se: {mass:78.97,  mp:221,  density:4.81,    metal:false, color:'красный/серый'},
+  Br: {mass:79.90,  mp:-7,   density:3.12,    metal:false, color:'красно-коричневый'},
+  Kr: {mass:83.80,  mp:-157, density:3.75,    metal:false, color:'бесцветный'},
+  Rb: {mass:85.47,  mp:39,   density:1.53,    metal:true,  color:'серебристый'},
+  Sr: {mass:87.62,  mp:777,  density:2.64,    metal:true,  color:'серебристо-белый'},
+  Y:  {mass:88.91,  mp:1522, density:4.47,    metal:true,  color:'серебристо-белый'},
+  Zr: {mass:91.22,  mp:1855, density:6.52,    metal:true,  color:'серебристо-белый'},
+  Nb: {mass:92.91,  mp:2477, density:8.57,    metal:true,  color:'серебристо-серый'},
+  Mo: {mass:95.96,  mp:2623, density:10.28,   metal:true,  color:'серебристо-серый'},
+  Tc: {mass:98,     mp:2157, density:11.50,   metal:true,  color:'серебристый'},
+  Ru: {mass:101.07, mp:2334, density:12.37,   metal:true,  color:'серебристо-белый'},
+  Rh: {mass:102.91, mp:1964, density:12.41,   metal:true,  color:'серебристо-белый'},
+  Pd: {mass:106.42, mp:1555, density:12.02,   metal:true,  color:'серебристо-белый'},
+  Ag: {mass:107.87, mp:962,  density:10.50,   metal:true,  color:'белый, блестящий'},
+  Cd: {mass:112.41, mp:321,  density:8.65,    metal:true,  color:'голубовато-серый'},
+  In: {mass:114.82, mp:157,  density:7.31,    metal:true,  color:'серебристо-белый'},
+  Sn: {mass:118.71, mp:232,  density:7.29,    metal:true,  color:'серебристо-белый'},
+  Sb: {mass:121.76, mp:631,  density:6.69,    metal:false, color:'серебристо-серый'},
+  Te: {mass:127.60, mp:450,  density:6.24,    metal:false, color:'серебристо-белый'},
+  I:  {mass:126.90, mp:114,  density:4.93,    metal:false, color:'фиолетово-чёрный'},
+  Xe: {mass:131.29, mp:-112, density:5.90,    metal:false, color:'бесцветный'},
+  Cs: {mass:132.91, mp:29,   density:1.93,    metal:true,  color:'золотисто-жёлтый'},
+  Ba: {mass:137.33, mp:727,  density:3.51,    metal:true,  color:'серебристо-белый'},
+  La: {mass:138.91, mp:920,  density:6.15,    metal:true,  color:'серебристо-белый'},
+  Hf: {mass:178.49, mp:2233, density:13.31,   metal:true,  color:'серебристо-серый'},
+  Ta: {mass:180.95, mp:3017, density:16.65,   metal:true,  color:'серебристо-серый'},
+  W:  {mass:183.84, mp:3422, density:19.25,   metal:true,  color:'серебристо-серый'},
+  Re: {mass:186.21, mp:3185, density:21.02,   metal:true,  color:'серебристо-серый'},
+  Os: {mass:190.23, mp:3033, density:22.59,   metal:true,  color:'серебристо-белый'},
+  Ir: {mass:192.22, mp:2446, density:22.56,   metal:true,  color:'серебристо-белый'},
+  Pt: {mass:195.08, mp:1768, density:21.45,   metal:true,  color:'серебристо-белый'},
+  Au: {mass:196.97, mp:1064, density:19.30,   metal:true,  color:'золотой'},
+  Hg: {mass:200.59, mp:-39,  density:13.53,   metal:true,  color:'серебристая жидкость'},
+  Tl: {mass:204.38, mp:304,  density:11.85,   metal:true,  color:'серебристо-серый'},
+  Pb: {mass:207.20, mp:327,  density:11.34,   metal:true,  color:'серо-голубой'},
+  Bi: {mass:208.98, mp:271,  density:9.78,    metal:true,  color:'серебристо-розовый'},
+  Po: {mass:209,    mp:254,  density:9.32,    metal:true,  color:'серебристый'},
+  Ra: {mass:226,    mp:700,  density:5.50,    metal:true,  color:'белый'},
+  U:  {mass:238.03, mp:1135, density:19.10,   metal:true,  color:'серебристо-серый'},
+  Th: {mass:232.04, mp:1750, density:11.72,   metal:true,  color:'серебристый'},
+  Pu: {mass:244,    mp:640,  density:19.84,   metal:true,  color:'серебристый'},
+};
+
+// ============================================================
+// ELEMENT MECHANICAL DATA
+// hv = Vickers hardness (HV), uts = tensile strength (MPa), pure annealed state
+// ============================================================
+const elMech = {
+  H:  {hv:0,    uts:0},    Li: {hv:5,    uts:15},   Be: {hv:1670, uts:170},
+  B:  {hv:2400, uts:0},    C:  {hv:120,  uts:0},    Na: {hv:1,    uts:2},
+  Mg: {hv:44,   uts:100},  Al: {hv:15,   uts:50},   Si: {hv:1150, uts:0},
+  P:  {hv:5,    uts:0},    S:  {hv:2,    uts:0},    K:  {hv:0.4,  uts:1},
+  Ca: {hv:17,   uts:60},   Sc: {hv:150,  uts:255},  Ti: {hv:160,  uts:220},
+  V:  {hv:628,  uts:800},  Cr: {hv:700,  uts:83},   Mn: {hv:196,  uts:480},
+  Fe: {hv:80,   uts:210},  Co: {hv:260,  uts:760},  Ni: {hv:150,  uts:317},
+  Cu: {hv:40,   uts:210},  Zn: {hv:30,   uts:37},   Ga: {hv:60,   uts:17},
+  Ge: {hv:780,  uts:0},    As: {hv:147,  uts:0},    Se: {hv:50,   uts:0},
+  Rb: {hv:0.3,  uts:0},    Sr: {hv:20,   uts:0},    Y:  {hv:380,  uts:190},
+  Zr: {hv:320,  uts:330},  Nb: {hv:1320, uts:275},  Mo: {hv:1530, uts:324},
+  Tc: {hv:1000, uts:0},    Ru: {hv:2160, uts:173},  Rh: {hv:1246, uts:951},
+  Pd: {hv:461,  uts:159},  Ag: {hv:25,   uts:120},  Cd: {hv:20,   uts:60},
+  In: {hv:9,    uts:4},    Sn: {hv:5,    uts:15},   Sb: {hv:294,  uts:0},
+  Cs: {hv:0.2,  uts:0},    Ba: {hv:30,   uts:0},    La: {hv:363,  uts:130},
+  Hf: {hv:1760, uts:485},  Ta: {hv:873,  uts:180},  W:  {hv:3430, uts:1510},
+  Re: {hv:2450, uts:1070}, Os: {hv:3920, uts:0},    Ir: {hv:1760, uts:2000},
+  Pt: {hv:549,  uts:125},  Au: {hv:216,  uts:100},  Hg: {hv:0,    uts:0},
+  Tl: {hv:26,   uts:9},    Pb: {hv:38,   uts:12},   Bi: {hv:94,   uts:0},
+  U:  {hv:1960, uts:400},  Th: {hv:350,  uts:144},
+};
+
+// ============================================================
+// MECHANICAL PREDICTION
+// ============================================================
+function predictMechanical(syms, pctFracs, sel) {
+  // Build weight fractions
+  const totalAtoms = sel ? Object.values(sel).reduce((a,b)=>a+b,0) : syms.length;
+  const fracs = {};
+  syms.forEach(s => {
+    fracs[s] = pctFracs ? (pctFracs[s] || 0) : (sel ? sel[s]/totalAtoms : 1/syms.length);
+  });
+
+  const hvVals = syms.map(s => elMech[s]?.hv || 0);
+  const utsVals = syms.map(s => elMech[s]?.uts || 0);
+
+  const hasHv  = hvVals.some(v => v > 0);
+  const hasUts = utsVals.some(v => v > 0);
+
+  if (!hasHv && !hasUts) return null;
+
+  // Weighted rule of mixtures
+  let baseHv  = syms.reduce((acc, s) => acc + (elMech[s]?.hv  || 0) * fracs[s], 0);
+  let baseUts = syms.reduce((acc, s) => acc + (elMech[s]?.uts || 0) * fracs[s], 0);
+
+  // Solid-solution strengthening: bonus for mixing dissimilar hardnesses
+  if (syms.length > 1 && hasHv) {
+    const hvMean = baseHv;
+    const hvStd = Math.sqrt(syms.reduce((acc, s) =>
+      acc + fracs[s] * Math.pow((elMech[s]?.hv || 0) - hvMean, 2), 0));
+    const diversity = hvMean > 0 ? Math.min(hvStd / hvMean, 1.2) : 0;
+    // Hall-Petch-like bonus capped at +80%
+    const bonus = 1 + 0.35 * diversity;
+    baseHv  *= bonus;
+    baseUts *= (1 + 0.25 * diversity);
+  }
+
+  // Hardness category
+  const cats = [
+    [0,    'н/д',              0],
+    [50,   'Очень мягкий',     1],
+    [200,  'Мягкий',           2],
+    [500,  'Средней твёрдости',3],
+    [1000, 'Твёрдый',          4],
+    [2000, 'Очень твёрдый',    5],
+    [Infinity,'Сверхтвёрдый',  6],
+  ];
+  let catLabel = 'н/д', catIdx = 0;
+  for (const [threshold, label, idx] of cats) {
+    if (baseHv >= threshold) { catLabel = label; catIdx = idx; }
+    else break;
+  }
+  if (!hasHv) { catLabel = 'н/д'; catIdx = 0; }
+
+  // Bar widths (log scale for HV: 1–5000 → 0–100%)
+  const hvBarPct = hasHv ? Math.min(100, Math.log10(Math.max(1, baseHv)) / Math.log10(5000) * 100) : 0;
+  const utsBarPct = hasUts ? Math.min(100, baseUts / 2500 * 100) : 0;
+
+  // Colour gradient: green→yellow→orange→red
+  function barColor(pct) {
+    if (pct < 25) return `hsl(${120 - pct*1.6}, 70%, 50%)`;
+    if (pct < 60) return `hsl(${80 - (pct-25)*1.6}, 75%, 50%)`;
+    return `hsl(${24 - (pct-60)*0.6}, 80%, 55%)`;
+  }
+
+  return {
+    hv: hasHv ? Math.round(baseHv) : null,
+    uts: hasUts ? Math.round(baseUts) : null,
+    catLabel, catIdx,
+    hvBarPct, utsBarPct,
+    hvColor: barColor(hvBarPct),
+    utsColor: barColor(utsBarPct),
+  };
+}
+
+function mechBlockHTML(mech) {
+  if (!mech) return '';
+  const hvRow = mech.hv != null ? `
+    <div class="mech-row">
+      <div class="mech-label-row"><span class="mech-label">Твёрдость (HV)</span><span class="mech-value">${mech.hv} HV</span></div>
+      <div class="mech-bar-bg"><div class="mech-bar" style="width:${mech.hvBarPct.toFixed(1)}%;background:${mech.hvColor}"></div></div>
+    </div>` : '';
+  const utsRow = mech.uts != null ? `
+    <div class="mech-row">
+      <div class="mech-label-row"><span class="mech-label">Прочность (UTS)</span><span class="mech-value">${mech.uts} МПа</span></div>
+      <div class="mech-bar-bg"><div class="mech-bar" style="width:${mech.utsBarPct.toFixed(1)}%;background:${mech.utsColor}"></div></div>
+    </div>` : '';
+  return `
+    <div class="mech-block">
+      <div class="mech-title">⚙️ Прогноз механических свойств</div>
+      ${hvRow}${utsRow}
+      <span class="mech-category mech-cat-${mech.catIdx}">${mech.catLabel}</span>
+      <span style="font-size:0.6rem;color:#334;margin-left:8px;">* правило смесей + упрочнение твёрдым раствором</span>
+    </div>`;
+}
+
+// ============================================================
+// BUILD TABLE
+// ============================================================
+const elMap = {};
+elements.forEach(e => elMap[e.sym] = e);
+
+// ============================================================
+// ELEMENT INFO BAR (mobile)
+// ============================================================
+function updateElInfoBar(e) {
+  const bar = document.getElementById('elInfoBar');
+  if (!bar) return;
+  bar.classList.add('visible');
+  document.getElementById('eiNum').textContent  = e.n;
+  document.getElementById('eiSym').textContent  = e.sym;
+  document.getElementById('eiName').textContent = e.name;
+  document.getElementById('eiCat').textContent  = catColors[e.cat]?.label || '';
+  // Will update selected indicator after toggleElement runs
+  setTimeout(() => {
+    const cnt = selected[e.sym];
+    const sel = document.getElementById('eiSel');
+    if (sel) sel.textContent = cnt ? '✓ ×' + cnt : '';
+  }, 10);
+}
+
+function buildTable() {
+  const table = document.getElementById('periodicTable');
+  // grid: 7 periods × 18 groups + 2 extra rows for lanthanides/actinides
+  // Create 9 rows × 18 cols grid
+  const grid = [];
+  for (let r = 0; r < 10; r++) {
+    grid.push(new Array(18).fill(null));
+  }
+  elements.forEach(e => {
+    const r = e.period - 1;
+    const c = e.group - 1;
+    if (r >= 0 && r < 10 && c >= 0 && c < 18) grid[r][c] = e;
+  });
+
+  table.innerHTML = '';
+  // Labels row
+  for (let c = 0; c < 18; c++) {
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'width:44px;height:16px;text-align:center;font-size:0.55rem;color:#334477;line-height:16px;';
+    lbl.textContent = c + 1;
+    table.appendChild(lbl);
+  }
+  // Change grid template to include label row
+  table.style.gridTemplateRows = '16px ' + 'repeat(9, 50px)';
+  table.style.gridTemplateColumns = 'repeat(18, 44px)';
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 18; c++) {
+      const e = grid[r][c];
+      if (!e) {
+        const empty = document.createElement('div');
+        empty.className = 'element empty';
+        // gap marker for lanthanides/actinides
+        if ((r === 5 || r === 6) && c === 2) {
+          empty.style.cssText = 'width:44px;height:50px;display:flex;align-items:center;justify-content:center;';
+          empty.style.fontSize = '0.45rem';
+          empty.style.color = '#334';
+          empty.textContent = r === 5 ? 'La…' : 'Ac…';
+        }
+        table.appendChild(empty);
+      } else {
+        const div = document.createElement('div');
+        div.className = `element cat-${e.cat}`;
+        div.id = `el-${e.sym}`;
+        div.innerHTML = `<span class="num">${e.n}</span><span class="sym">${e.sym}</span><span class="name-el">${e.name.length > 8 ? e.name.slice(0,7)+'.' : e.name}</span>`;
+        div.title = `${e.n} ${e.name} (${e.sym})`;
+        div.onclick = () => { updateElInfoBar(e); toggleElement(e.sym); };
+        table.appendChild(div);
+      }
+    }
+  }
+
+  // Legend
+  const leg = document.getElementById('legend');
+  Object.entries(catColors).forEach(([cat, info]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<div class="legend-dot" style="background:${info.bg};border:1px solid #ffffff22"></div>${info.label}`;
+    leg.appendChild(item);
+  });
+}
+
+// ============================================================
+// SELECTION
+// ============================================================
+let selected = {}; // {sym: count}
+let pctMode = false;
+let customPct = {}; // {sym: percentage}
+
+function togglePctMode() {
+  pctMode = !pctMode;
+  const btn = document.getElementById('pctToggle');
+  btn.classList.toggle('active', pctMode);
+  if (pctMode) {
+    // Initialize equal percentages
+    const syms = Object.keys(selected);
+    if (syms.length > 0) {
+      const eq = parseFloat((100 / syms.length).toFixed(1));
+      syms.forEach((s, i) => {
+        customPct[s] = i === syms.length - 1 ? parseFloat((100 - eq * (syms.length - 1)).toFixed(1)) : eq;
+      });
+    }
+  }
+  renderSlots();
+}
+
+function toggleElement(sym) {
+  if (!selected[sym]) selected[sym] = 0;
+  selected[sym]++;
+  if (selected[sym] > 10) { delete selected[sym]; delete customPct[sym]; }
+  if (pctMode) redistributePct();
+  renderSlots();
+  renderPredictions();
+  updateLabBadge();
+}
+
+function redistributePct() {
+  const syms = Object.keys(selected);
+  if (!syms.length) return;
+  const eq = parseFloat((100 / syms.length).toFixed(1));
+  syms.forEach((s, i) => {
+    customPct[s] = i === syms.length - 1 ? parseFloat((100 - eq * (syms.length - 1)).toFixed(1)) : eq;
+  });
+}
+
+function updatePct(sym, val) {
+  const v = parseFloat(val);
+  if (!isNaN(v) && v >= 0 && v <= 100) customPct[sym] = v;
+  renderPctSum();
+}
+
+function renderPctSum() {
+  const sumDiv = document.getElementById('pctSum');
+  if (!sumDiv) return;
+  const total = Object.keys(selected).reduce((acc, s) => acc + (customPct[s] || 0), 0);
+  const rounded = Math.round(total * 10) / 10;
+  sumDiv.textContent = `Сумма: ${rounded}%`;
+  sumDiv.className = 'pct-sum ' + (Math.abs(rounded - 100) < 0.5 ? 'ok' : 'bad');
+}
+
+function renderSlots() {
+  const container = document.getElementById('slots');
+  container.innerHTML = '';
+  let total = 0;
+  const syms = Object.keys(selected);
+
+  syms.forEach(sym => {
+    const cnt = selected[sym];
+    total += cnt;
+    const el = elMap[sym];
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.style.background = catColors[el.cat]?.bg || '#1a1a3a';
+    slot.style.borderColor = '#3a4a8a';
+    if (pctMode) {
+      const pctVal = customPct[sym] !== undefined ? customPct[sym] : (100 / syms.length).toFixed(1);
+      slot.innerHTML = `<span class="slot-sym">${sym}</span><input class="slot-pct-input" type="number" min="0" max="100" step="0.1" value="${pctVal}" onclick="event.stopPropagation()" oninput="updatePct('${sym}', this.value)" /><span style="font-size:0.55rem;color:#7788aa">%</span>`;
+    } else {
+      slot.innerHTML = `<span class="slot-cnt">×${cnt}</span><span class="slot-sym">${sym}</span>`;
+    }
+    slot.title = `${el.name}${pctMode ? '' : ' ×' + cnt} (клик чтобы удалить)`;
+    slot.onclick = (e) => { if (e.target.tagName !== 'INPUT') removeSlot(sym); };
+    container.appendChild(slot);
+
+    const elDiv = document.getElementById(`el-${sym}`);
+    if (elDiv) elDiv.classList.add('selected');
+  });
+
+  // Remove highlighting for deselected
+  elements.forEach(e => {
+    if (!selected[e.sym]) {
+      const d = document.getElementById(`el-${e.sym}`);
+      if (d) d.classList.remove('selected');
+    }
+  });
+
+  // Pct sum indicator
+  if (pctMode && syms.length > 0) {
+    const sumDiv = document.createElement('div');
+    sumDiv.id = 'pctSum';
+    sumDiv.className = 'pct-sum';
+    container.appendChild(sumDiv);
+    renderPctSum();
+  }
+
+  const hint = document.getElementById('hint');
+  if (total === 0) hint.textContent = 'Выберите 2–6 элементов из таблицы';
+  else if (pctMode) hint.textContent = `Укажите % пропорции и нажмите «Соединить»`;
+  else if (total === 1) hint.textContent = `Выбрано: ${total} атом. Добавьте ещё!`;
+  else hint.textContent = `Выбрано: ${total} атомов. Нажмите «Соединить»`;
+}
+
+function removeSlot(sym) {
+  delete selected[sym];
+  delete customPct[sym];
+  const elDiv = document.getElementById(`el-${sym}`);
+  if (elDiv) elDiv.classList.remove('selected');
+  renderSlots();
+  renderPredictions();
+}
+
+function clearSlots() {
+  Object.keys(selected).forEach(sym => {
+    const d = document.getElementById(`el-${sym}`);
+    if (d) d.classList.remove('selected');
+  });
+  selected = {};
+  customPct = {};
+  renderSlots();
+  renderPredictions();
+}
+
+// ============================================================
+// MATCHING
+// ============================================================
+function matchCompound(sel) {
+  for (const c of compounds) {
+    if (objEqual(c.match, sel)) return {type:'compound', data:c};
+  }
+  const keys = Object.keys(sel);
+  if (keys.length >= 2) {
+    const vals = keys.map(k => sel[k]);
+    const g = gcdArr(vals);
+    if (g > 1) {
+      const reduced = {};
+      keys.forEach(k => reduced[k] = sel[k] / g);
+      for (const c of compounds) {
+        if (objEqual(c.match, reduced)) return {type:'compound', data:c};
+      }
+    }
+  }
+  // Try alloys (order-insensitive, ignore counts)
+  const syms = Object.keys(sel);
+  for (const a of alloys) {
+    const ak = Object.keys(a.match);
+    if (ak.length === syms.length && ak.every(k => syms.includes(k))) {
+      return {type:'alloy', data:a};
+    }
+  }
+  return null;
+}
+
+function objEqual(a, b) {
+  const ka = Object.keys(a).sort();
+  const kb = Object.keys(b).sort();
+  if (ka.length !== kb.length) return false;
+  return ka.every((k, i) => k === kb[i] && a[k] === b[k]);
+}
+
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function gcdArr(arr) { return arr.reduce((a, b) => gcd(a, b)); }
+
+function formatInput(sel) {
+  return Object.entries(sel).map(([s, c]) => c > 1 ? `${s}${c}` : s).join('');
+}
+
+// ============================================================
+// PREDICTION ENGINE
+// ============================================================
+function getPredictions(syms) {
+  if (!syms || syms.length === 0) return [];
+  const symSet = new Set(syms);
+  const results = [];
+
+  // Compounds: match if all required elements are in symSet
+  for (const c of compounds) {
+    const needed = Object.keys(c.match);
+    if (needed.every(k => symSet.has(k))) {
+      // Compute mole % for each element
+      const total = Object.values(c.match).reduce((a, b) => a + b, 0);
+      const ratioStr = needed.map(k => `${k}: ${(c.match[k]/total*100).toFixed(0)}%`).join(', ');
+      results.push({ type: 'compound', formula: c.formula, name: c.name, ratio: ratioStr, data: c });
+    }
+  }
+
+  // Alloys: match if all required elements are in symSet
+  for (const a of alloys) {
+    const needed = Object.keys(a.match);
+    if (needed.every(k => symSet.has(k))) {
+      // Typical ratio based on alloy notes or equal
+      const cnt = needed.length;
+      const ratioStr = needed.map(k => `${k}: ~${(100/cnt).toFixed(0)}%`).join(', ');
+      results.push({ type: 'alloy', formula: a.formula, name: a.name, ratio: ratioStr, data: a });
+    }
+  }
+
+  return results.slice(0, 10);
+}
+
+function renderPredictions() {
+  const panel = document.getElementById('predictionPanel');
+  const list = document.getElementById('predictionList');
+  const syms = Object.keys(selected);
+  if (syms.length === 0) { panel.style.display = 'none'; return; }
+
+  const preds = getPredictions(syms);
+  panel.style.display = 'block';
+
+  if (preds.length === 0) {
+    list.innerHTML = `<div class="pred-none">Нет известных соединений для выбранных элементов</div>`;
+    return;
+  }
+
+  list.innerHTML = preds.map((p, i) => {
+    const badge = p.type === 'compound'
+      ? `<span class="pred-type-badge pred-compound">соединение</span>`
+      : `<span class="pred-type-badge pred-alloy">сплав</span>`;
+    let hvHint = '';
+    if (p.type === 'alloy' && p.data.hardness) {
+      const m = p.data.hardness.match(/(\d+)/);
+      if (m) hvHint = `<span style="font-size:0.62rem;color:#aa8844">⚙️ ${p.data.hardness}</span>`;
+    }
+    return `<div class="pred-item" onclick="applyPrediction(${i})" title="Нажми, чтобы загрузить в результат">
+      ${badge}
+      <span class="pred-formula">${p.formula}</span>
+      <span class="pred-name">${p.name}</span>
+      ${hvHint || `<span class="pred-ratio">${p.ratio}</span>`}
+    </div>`;
+  }).join('');
+
+  window._lastPredictions = preds;
+}
+
+function applyPrediction(idx) {
+  const p = window._lastPredictions?.[idx];
+  if (!p) return;
+  const result = document.getElementById('result');
+  if (p.type === 'alloy') result.innerHTML = renderAlloyCard(p.data);
+  else result.innerHTML = renderCard(p.data);
+  addHistory(p.data, p.type);
+}
+
+// ============================================================
+// MIXTURE/ALLOY GENERATOR
+// ============================================================
+const metalCats = new Set(['alkali','alkali-earth','transition','post-transition','lanthanide','actinide']);
+
+function isMetalEl(sym) {
+  const e = elMap[sym];
+  if (!e) return false;
+  if (metalCats.has(e.cat)) return true;
+  if (e.cat === 'metalloid') return true;
+  return false;
+}
+
+function generateMixture(sel, pctFracs) {
+  const syms = Object.keys(sel);
+  const allMetal = syms.every(s => isMetalEl(s));
+  const names = syms.map(s => elMap[s]?.name || s);
+
+  let totalAtoms = Object.values(sel).reduce((a,b)=>a+b,0);
+  let avgDensity = 0, avgMp = 0, totalMass = 0;
+  let hasDensity = true, hasMp = true;
+  syms.forEach(s => {
+    const p = elProps[s];
+    const frac = pctFracs ? (pctFracs[s] || 0) : sel[s] / totalAtoms;
+    if (p) {
+      avgDensity += p.density * frac;
+      avgMp += p.mp * frac;
+      totalMass += p.mass * (pctFracs ? frac * 100 : sel[s]);
+    } else { hasDensity = false; hasMp = false; }
+  });
+
+  const formulaDisplay = pctFracs
+    ? syms.map(s => `${s}(${(pctFracs[s]*100).toFixed(1)}%)`).join('–')
+    : syms.join('–');
+  const molarApprox = totalMass.toFixed(1) + ' г/моль (approx.)';
+
+  const hazardEls = {Pb:'⚠️ Свинец токсичен', Hg:'☠️ Ртуть высокотоксична', Cd:'⚠️ Кадмий токсичен',
+    Tl:'☠️ Таллий крайне ядовит', As:'⚠️ Мышьяк токсичен', Be:'⚠️ Бериллий токсичен',
+    Po:'☠️ Полоний радиоактивен', Ra:'☠️ Радий радиоактивен', U:'⚠️ Уран радиоактивен',
+    Pu:'☠️ Плутоний радиоактивен', F:'⚠️ Фтор крайне агрессивен', Cl:'⚠️ Хлор токсичен'};
+  const hazards = syms.filter(s => hazardEls[s]).map(s => hazardEls[s]);
+  const hazard = hazards.length ? hazards.join(', ') : 'Зависит от состава';
+
+  let state = 'твёрдое';
+  if (avgMp < 25 && hasMp) state = 'жидкость (при 25°C)';
+
+  const colors = syms.map(s => elProps[s]?.color).filter(Boolean);
+  const colorStr = colors.length ? colors[0] : 'серебристая';
+
+  const mech = predictMechanical(syms, pctFracs, pctFracs ? null : sel);
+
+  if (allMetal) {
+    const mpStr = hasMp ? `~${Math.round(avgMp)} °C (взвешенное среднее)` : '—';
+    const densStr = hasDensity ? `~${avgDensity.toFixed(2)} г/см³ (взвешенное среднее)` : '—';
+    return {
+      _generated: true, _type: 'alloy', _mech: mech,
+      formula: formulaDisplay,
+      name: `Сплав ${names.join('–')}`,
+      iupac: `Металлический сплав: ${names.join(', ')}`,
+      molar: molarApprox,
+      state, mp: mpStr, bp: '— (зависит от состава)', density: densStr,
+      color: colorStr, solubility: 'Не растворяется в воде', hazard,
+      uses: `Специальный металлический сплав. Свойства определяются пропорциями компонентов и термообработкой. ` +
+            `Металлы ${names.join(' и ')} образуют сплав с улучшенными механическими или физическими характеристиками. ` +
+            `Возможные применения: конструкционный материал, покрытие, ювелирное изделие.`,
+      note: `Расчётные свойства на основе взвешенного среднего компонентов. Реальные свойства зависят от пропорций, ` +
+            `способа получения (литьё, спекание) и термообработки.` +
+            (pctFracs ? ` Использованы заданные пропорции: ${syms.map(s=>`${s} ${(pctFracs[s]*100).toFixed(1)}%`).join(', ')}.` : '')
+    };
+  } else {
+    const mpStr = hasMp ? `~${Math.round(avgMp)} °C` : '—';
+    const densStr = hasDensity ? `~${avgDensity.toFixed(2)} г/см³` : '—';
+    const hasNonMetal = syms.some(s => {
+      const e = elMap[s];
+      return e && (e.cat === 'nonmetal' || e.cat === 'halogen');
+    });
+    const mixType = hasNonMetal ? 'Химическое соединение / смесь' : 'Смесь веществ';
+    return {
+      _generated: true, _type: 'mixture', _mech: mech,
+      formula: formulaDisplay,
+      name: `Смесь: ${names.join(' + ')}`,
+      iupac: `${mixType}: ${names.join(', ')}`,
+      molar: molarApprox,
+      state: 'зависит от условий', mp: mpStr, bp: '—', density: densStr,
+      color: colorStr, solubility: 'Зависит от состава', hazard,
+      uses: `Смесь элементов ${names.join(', ')}. При определённых условиях (нагрев, давление, катализатор) ` +
+            `могут образовывать химические соединения или сплавы. Свойства смеси определяются свойствами компонентов.`,
+      note: `Конкретное соединение не найдено в базе. Показаны оценочные характеристики смеси.` +
+            (pctFracs ? ` Заданные пропорции: ${syms.map(s=>`${s} ${(pctFracs[s]*100).toFixed(1)}%`).join(', ')}.` : '')
+    };
+  }
+}
+
+// ============================================================
+// COMBINE
+// ============================================================
+let history = [];
+
+function combine() {
+  const syms = Object.keys(selected);
+  const total = Object.values(selected).reduce((a, b) => a + b, 0);
+  if (total < 2 && !pctMode) { showHint('Выберите минимум 2 атома!'); return; }
+  if (pctMode && syms.length < 2) { showHint('Добавьте минимум 2 элемента!'); return; }
+
+  let pctFracs = null;
+  if (pctMode) {
+    const pctTotal = syms.reduce((acc, s) => acc + (customPct[s] || 0), 0);
+    if (pctTotal <= 0) { showHint('Укажите процентное соотношение!'); return; }
+    pctFracs = {};
+    syms.forEach(s => { pctFracs[s] = (customPct[s] || 0) / pctTotal; });
+  }
+
+  const result = document.getElementById('result');
+  const match = pctMode ? null : matchCompound(selected);
+
+  if (match) {
+    const card = match.type === 'alloy' ? renderAlloyCard(match.data) : renderCard(match.data);
+    result.innerHTML = card;
+    addHistory(match.data, match.type);
+  } else {
+    const generated = generateMixture(selected, pctFracs);
+    result.innerHTML = renderGeneratedCard(generated);
+    addHistory(generated, generated._type);
+  }
+  if (isMobile()) switchTab('result');
+}
+
+function renderCard(c) {
+  const stateClass = c.state.includes('газ') ? 'state-gas' : c.state.includes('жидк') ? 'state-liquid' : 'state-solid';
+  return `
+    <div class="compound-card">
+      <div class="compound-formula">${c.formula}</div>
+      <div class="compound-name">${c.name}<br><span class="iupac">ИЮПАК: ${c.iupac}</span></div>
+      <div class="props">
+        <div class="prop"><div class="prop-label">Молярная масса</div><div class="prop-value">${c.molar}</div></div>
+        <div class="prop"><div class="prop-label">Агрегатное состояние</div><div class="prop-value ${stateClass}">${c.state}</div></div>
+        <div class="prop"><div class="prop-label">Температура плавления</div><div class="prop-value">${c.mp}</div></div>
+        <div class="prop"><div class="prop-label">Температура кипения</div><div class="prop-value">${c.bp}</div></div>
+        <div class="prop"><div class="prop-label">Плотность</div><div class="prop-value">${c.density}</div></div>
+        <div class="prop"><div class="prop-label">Цвет/вид</div><div class="prop-value">${c.color}</div></div>
+        <div class="prop"><div class="prop-label">Растворимость</div><div class="prop-value">${c.solubility}</div></div>
+        <div class="prop"><div class="prop-label">Опасность</div><div class="prop-value" style="color:${c.hazard.includes('⚠️')||c.hazard.includes('☠️')?'#ff8888':'#88dd88'}">${c.hazard}</div></div>
+      </div>
+      <div class="uses"><div class="prop-label">Применение</div><div class="uses-text">${c.uses}</div></div>
+    </div>`;
+}
+
+function renderAlloyCard(a) {
+  const hvMatch = a.hardness ? a.hardness.match(/HV\s*([\d]+)/) || a.hardness.match(/HB\s*([\d]+)/) : null;
+  const hvNum = hvMatch ? parseInt(hvMatch[1]) : null;
+  const hrcMatch = a.hardness ? a.hardness.match(/HRC\s*([\d]+)/) : null;
+  const hvFromHrc = hrcMatch ? (parseInt(hrcMatch[1]) + 20) * 10 : null;
+  const hvEff = hvNum || hvFromHrc;
+  const hvBarPct = hvEff ? Math.min(100, Math.log10(Math.max(1,hvEff)) / Math.log10(5000) * 100) : 0;
+  const hvColor = hvBarPct > 60 ? '#cc6644' : hvBarPct > 30 ? '#ccaa44' : '#66aa66';
+  const hvBar = hvEff ? `
+    <div class="mech-block">
+      <div class="mech-title">⚙️ Механические свойства</div>
+      <div class="mech-row">
+        <div class="mech-label-row"><span class="mech-label">Твёрдость</span><span class="mech-value">${a.hardness}</span></div>
+        <div class="mech-bar-bg"><div class="mech-bar" style="width:${hvBarPct.toFixed(1)}%;background:${hvColor}"></div></div>
+      </div>
+    </div>` : '';
+  return `
+    <div class="compound-card" style="border-color:#4a6a3a;">
+      <div style="font-size:0.65rem;color:#88bb66;letter-spacing:2px;margin-bottom:4px;">⚙️ СПЛАВ</div>
+      <div class="compound-formula" style="color:#ccffaa;">${a.formula}</div>
+      <div class="compound-name">${a.name}</div>
+      <div class="props">
+        <div class="prop"><div class="prop-label">Температура плавления</div><div class="prop-value">${a.mp}</div></div>
+        <div class="prop"><div class="prop-label">Плотность</div><div class="prop-value">${a.density}</div></div>
+        <div class="prop"><div class="prop-label">Цвет</div><div class="prop-value">${a.color}</div></div>
+        <div class="prop"><div class="prop-label">Твёрдость</div><div class="prop-value">${a.hardness}</div></div>
+        <div class="prop"><div class="prop-label">Коррозионная стойкость</div><div class="prop-value">${a.corrosion}</div></div>
+        <div class="prop"><div class="prop-label">Опасность</div><div class="prop-value" style="color:${a.hazard.includes('⚠️')||a.hazard.includes('☠️')?'#ff8888':'#88dd88'}">${a.hazard}</div></div>
+      </div>
+      ${hvBar}
+      <div class="uses"><div class="prop-label">Применение</div><div class="uses-text">${a.uses}</div></div>
+      <div class="uses" style="margin-top:6px;border-top:1px solid #2a3a2a;padding-top:8px;">
+        <div class="prop-label">Особенности</div>
+        <div class="uses-text" style="color:#778866;">${a.note}</div>
+      </div>
+    </div>`;
+}
+
+
+function renderGeneratedCard(g) {
+  const isAlloy = g._type === 'alloy';
+  const accent = isAlloy ? '#4a6a3a' : '#3a4a6a';
+  const accentText = isAlloy ? '#ccffaa' : '#aaccff';
+  const tag = isAlloy ? '⚙️ РАСЧЁТНЫЙ СПЛАВ' : '\U0001f9ec РАСЧЁТНАЯ СМЕСЬ';
+  const tagColor = isAlloy ? '#88bb66' : '#6699cc';
+  const mech = g._mech ? mechBlockHTML(g._mech) : '';
+  const hazCol = (g.hazard.includes('⚠️')||g.hazard.includes('☠️')) ? '#ff8888' : '#88dd88';
+  return '<div class="compound-card" style="border-color:'+accent+';">'
+    +'<div style="font-size:0.65rem;color:'+tagColor+';letter-spacing:2px;margin-bottom:4px;">'+tag+'</div>'
+    +'<div class="compound-formula" style="color:'+accentText+';">'+g.formula+'</div>'
+    +'<div class="compound-name">'+g.name+'<br><span class="iupac">'+g.iupac+'</span></div>'
+    +'<div class="props">'
+    +'<div class="prop"><div class="prop-label">Молярная масса</div><div class="prop-value">'+g.molar+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Агрегатное состояние</div><div class="prop-value">'+g.state+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Темп. плавления</div><div class="prop-value">'+g.mp+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Темп. кипения</div><div class="prop-value">'+g.bp+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Плотность</div><div class="prop-value">'+g.density+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Цвет</div><div class="prop-value">'+g.color+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Растворимость</div><div class="prop-value">'+g.solubility+'</div></div>'
+    +'<div class="prop"><div class="prop-label">Опасность</div><div class="prop-value" style="color:'+hazCol+'">'+g.hazard+'</div></div>'
+    +'</div>'+mech
+    +'<div class="uses"><div class="prop-label">Описание</div><div class="uses-text">'+g.uses+'</div></div>'
+    +'<div class="uses" style="margin-top:6px;border-top:1px solid #1a2a3a;padding-top:8px;">'
+    +'<div class="prop-label" style="color:#445566;">Примечание</div>'
+    +'<div class="uses-text" style="color:#445566;font-style:italic;">'+g.note+'</div></div>'
+    +'</div>';
+}
+
+function addHistory(c, type) {
+  const key = c.formula;
+  if (!history.find(h => h.data.formula === key)) {
+    history.unshift({data: c, type: type || 'compound'});
+    if (history.length > 20) history.pop();
+    renderHistory();
+  }
+}
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (history.length === 0) { list.innerHTML = ''; return; }
+  list.innerHTML = history.map((h, i) => {
+    const icon = h.type === 'alloy' ? '⚙️' : h.type === 'mixture' ? '\U0001f9ec' : '\U0001f52c';
+    return '<div class="history-item" onclick="showHistoryItem('+i+')">'
+      +'<span class="history-formula">'+icon+' '+h.data.formula+'</span>'
+      +'<span class="history-name">'+h.data.name+'</span></div>';
+  }).join('');
+}
+function showHistoryItem(idx) {
+  const h = history[idx];
+  if (!h) return;
+  let html;
+  if (h.data._generated) html = renderGeneratedCard(h.data);
+  else if (h.type === 'alloy') html = renderAlloyCard(h.data);
+  else html = renderCard(h.data);
+  document.getElementById('result').innerHTML = html;
+}
+function showHint(msg) {
+  const hint = document.getElementById('hint');
+  const orig = hint.textContent;
+  hint.style.color = '#ff8888';
+  hint.textContent = msg;
+  setTimeout(() => { hint.style.color = ''; hint.textContent = orig; }, 2000);
+}
+
+
+
+// PWA install prompt
+let _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  const banner = document.getElementById('pwaBanner');
+  if (banner && !localStorage.getItem('pwa-dismissed')) {
+    setTimeout(() => banner.classList.add('show'), 2000);
+  }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.addEventListener('click', () => {
+    if (_deferredPrompt) {
+      _deferredPrompt.prompt();
+      _deferredPrompt.userChoice.then(() => { _deferredPrompt = null; });
+    }
+    dismissPwaBanner();
+  });
+});
+function dismissPwaBanner() {
+  const b = document.getElementById('pwaBanner');
+  if (b) b.classList.remove('show');
+  localStorage.setItem('pwa-dismissed', '1');
+}
+window.addEventListener('appinstalled', () => { dismissPwaBanner(); console.log('PWA installed'); });
+
+// ============================================================
+// MOBILE TAB NAVIGATION
+// ============================================================
+function isMobile() { return window.innerWidth <= 768; }
+
+function switchTab(name) {
+  if (!isMobile()) return;
+  // Remove existing tab-* class from body
+  document.body.className = document.body.className.replace(/\btab-\w+\b/g, '').trim();
+  document.body.classList.add('tab-' + name);
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tab-' + name);
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function updateLabBadge() {
+  const badge = document.getElementById('labBadge');
+  if (!badge) return;
+  const count = Object.keys(selected).length;
+  badge.textContent = count > 0 ? count : '';
+  badge.classList.toggle('visible', count > 0);
+}
+
+// Init mobile tab
+(function initMobileTabs() {
+  if (isMobile()) {
+    switchTab('table');
+  }
+  window.addEventListener('resize', () => {
+    if (!isMobile()) {
+      document.body.className = document.body.className.replace(/\btab-\w+\b/g, '').trim();
+    } else if (!document.body.className.includes('tab-')) {
+      switchTab('table');
+    }
+  });
+})();
+
+// INIT
+buildTable();
+renderSlots();
+renderPredictions();
+</script>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered, scope:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
+
+<!-- PWA install banner -->
+<div class="pwa-banner" id="pwaBanner">
+  <div class="pwa-banner-text">
+    <strong>⚗️ Установить приложение</strong>
+    Работает офлайн, запускается как обычное приложение
+  </div>
+  <button class="pwa-btn-install" id="pwaInstallBtn">Установить</button>
+  <button class="pwa-btn-close" onclick="dismissPwaBanner()">✕</button>
+</div>
+<!-- Mobile tab bar -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" onclick="switchTab('table')" id="tab-table">
+    <span class="tab-icon">🔬</span><span>Таблица</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('lab')" id="tab-lab">
+    <span class="tab-badge" id="labBadge"></span>
+    <span class="tab-icon">⚗️</span><span>Лаборатория</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('result')" id="tab-result">
+    <span class="tab-icon">📋</span><span>Результат</span>
+  </button>
+</div>
+</body>
+</html>
